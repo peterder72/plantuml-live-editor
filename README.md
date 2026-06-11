@@ -45,6 +45,25 @@ bunx playwright install chromium
 bun run test:e2e
 ```
 
+## VS Code Extension
+
+Build the extension host and offline preview webview:
+
+```sh
+bun run build:vscode
+```
+
+Create an installable VSIX:
+
+```sh
+bun run package:vscode
+```
+
+After installing the VSIX, open a PlantUML document and run
+**PlantUML: Open Preview to the Side**. The extension uses VS Code's native text
+editor and keeps rendering, live toggles, pan, zoom, fit, reset, and export in
+an offline webview.
+
 ## Architecture
 
 - `src/rendering/` initializes Viz.js before PlantUML, serializes renders,
@@ -55,6 +74,8 @@ bun run test:e2e
   transform state.
 - `src/state/` persists source locally without making storage availability a
   requirement.
+- `src/vscode/` is the shared preview webview shell and message contract.
+- `vscode/` contains the VS Code extension host, manifest, and build targets.
 
 ## Known Limitations
 

@@ -10,6 +10,7 @@ interface PreviewPanelProps {
   renderRevision: number;
   status: RenderStatus;
   onExportPng: () => void;
+  title?: string;
 }
 
 export function PreviewPanel({
@@ -17,6 +18,7 @@ export function PreviewPanel({
   renderRevision,
   status,
   onExportPng,
+  title = "Preview",
 }: PreviewPanelProps) {
   const actions = (
     <div className="preview-actions">
@@ -46,7 +48,7 @@ export function PreviewPanel({
         title={
           <>
             <span className="preview-icon" />
-            <span>Preview</span>
+            <span>{title}</span>
             <span className="format-pill">SVG</span>
           </>
         }

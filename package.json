@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && bun scripts/verify-build.ts",
+    "build:vscode": "vite build --config vscode/vite.extension.config.ts && vite build --config vscode/vite.webview.config.ts && bun scripts/verify-vscode-build.ts",
+    "package:vscode": "bun run build:vscode && cd vscode && ../node_modules/.bin/vsce package --no-dependencies",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit",
@@ -33,7 +35,9 @@
     "@types/node": "24.3.0",
     "@types/react": "19.1.9",
     "@types/react-dom": "19.1.7",
+    "@types/vscode": "^1.96.0",
     "@vitejs/plugin-react": "4.7.0",
+    "@vscode/vsce": "^3.9.2",
     "eslint": "9.32.0",
     "eslint-plugin-react-hooks": "5.2.0",
     "eslint-plugin-react-refresh": "0.4.20",

@@ -1,0 +1,57 @@
+{
+  "name": "plantuml-live-preview",
+  "displayName": "PlantUML Live Preview",
+  "description": "Offline PlantUML preview with pan, zoom, fit, export, and live boolean toggles.",
+  "version": "0.1.0",
+  "publisher": "local",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Visualization"
+  ],
+  "keywords": [
+    "plantuml",
+    "uml",
+    "diagram",
+    "offline",
+    "preview"
+  ],
+  "main": "./dist/extension.cjs",
+  "extensionKind": [
+    "ui"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "plantumlLive.openPreview",
+        "title": "PlantUML: Open Preview to the Side",
+        "icon": "$(preview)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "plantumlLive.openPreview",
+          "group": "navigation",
+          "when": "resourceExtname =~ /\\.(puml|plantuml|pu|iuml|wsd)$/"
+        }
+      ]
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build:host": "vite build --config vite.extension.config.ts",
+    "build:webview": "vite build --config vite.webview.config.ts",
+    "build": "npm run build:host && npm run build:webview",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "latest"
+  }
+}
