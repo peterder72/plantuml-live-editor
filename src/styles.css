@@ -275,7 +275,7 @@ button {
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  background: #0d131a;
+  background: #fff;
 }
 
 .diagram-viewport {
@@ -294,7 +294,7 @@ button {
 .viewport-grid {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(circle, #2a3440 0.75px, transparent 0.8px);
+  background-image: radial-gradient(circle, #d8dde3 0.75px, transparent 0.8px);
   background-position: -1px -1px;
   background-size: 20px 20px;
   opacity: 0.45;
@@ -306,7 +306,6 @@ button {
   top: 0;
   left: 0;
   transform-origin: 0 0;
-  will-change: transform;
 }
 
 .diagram-content {
@@ -321,7 +320,6 @@ button {
   overflow: visible;
   max-width: none;
   max-height: none;
-  filter: drop-shadow(0 14px 30px rgb(0 0 0 / 25%));
 }
 
 .preview-placeholder {

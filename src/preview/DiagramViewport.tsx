@@ -181,7 +181,7 @@ export function DiagramViewport({
         data-testid="diagram-transform"
         data-scale={transform.scale}
         style={{
-          transform: `translate3d(${transform.translateX}px, ${transform.translateY}px, 0) scale(${transform.scale})`,
+          transform: `translate(${transform.translateX}px, ${transform.translateY}px) scale(${transform.scale})`,
         }}
       >
         <div
