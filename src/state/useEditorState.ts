@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 export const DEFAULT_SOURCE = `@startuml
 skinparam backgroundColor transparent
@@ -35,7 +35,5 @@ export function useEditorState() {
     }
   }, [source]);
 
-  const resetSource = useCallback(() => setSource(DEFAULT_SOURCE), []);
-
-  return { source, setSource, resetSource };
+  return { source, setSource };
 }

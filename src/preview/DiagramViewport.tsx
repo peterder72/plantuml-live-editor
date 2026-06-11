@@ -1,4 +1,3 @@
-import { Maximize, Minus, Plus, RotateCcw } from "lucide-react";
 import {
   type PointerEvent as ReactPointerEvent,
   type WheelEvent as ReactWheelEvent,
@@ -12,6 +11,7 @@ import {
   useViewportTransform,
   zoomAtPoint,
 } from "./useViewportTransform";
+import { ViewportControls } from "./ViewportControls";
 
 interface DiagramViewportProps {
   svg: string;
@@ -199,45 +199,14 @@ export function DiagramViewport({
         </div>
       )}
 
-      <div className="viewport-controls" aria-label="Diagram view controls">
-        <button
-          type="button"
-          title="Zoom out"
-          aria-label="Zoom out"
-          onClick={() => zoomFromCenter(0.8)}
-        >
-          <Minus size={16} />
-        </button>
-        <output aria-label="Zoom level">
-          {Math.round(transform.scale * 100)}%
-        </output>
-        <button
-          type="button"
-          title="Zoom in"
-          aria-label="Zoom in"
-          onClick={() => zoomFromCenter(1.25)}
-        >
-          <Plus size={16} />
-        </button>
-        <span className="control-divider" />
-        <button
-          type="button"
-          title="Fit diagram"
-          aria-label="Fit diagram"
-          onClick={fit}
-          disabled={!diagramSize}
-        >
-          <Maximize size={15} />
-        </button>
-        <button
-          type="button"
-          title="Reset view"
-          aria-label="Reset view"
-          onClick={reset}
-        >
-          <RotateCcw size={15} />
-        </button>
-      </div>
+      <ViewportControls
+        scale={transform.scale}
+        canFit={Boolean(diagramSize)}
+        onZoomOut={() => zoomFromCenter(0.8)}
+        onZoomIn={() => zoomFromCenter(1.25)}
+        onFit={fit}
+        onReset={reset}
+      />
     </div>
   );
 }

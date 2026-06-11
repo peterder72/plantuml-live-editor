@@ -1,29 +1,16 @@
-import {
-  CircleAlert,
-  Code2,
-  Download,
-  RotateCcw,
-  Sparkles,
-} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PlantUmlEditor } from "./editor/PlantUmlEditor";
-import { LiveToggleCard } from "./liveToggles/LiveToggleCard";
-import { DiagramViewport } from "./preview/DiagramViewport";
+import { AppHeader, type RenderStatus } from "./components/AppHeader";
+import { EditorPanel } from "./editor/EditorPanel";
+import { PreviewPanel } from "./preview/PreviewPanel";
 import {
   plantUmlRenderer,
   type RenderResult,
 } from "./rendering/plantumlRenderer";
-import { downloadPng, downloadSvg } from "./rendering/diagramExporter";
+import { downloadPng } from "./rendering/diagramExporter";
 import { useEditorState } from "./state/useEditorState";
 
-type RenderStatus =
-  | { kind: "initializing"; label: string }
-  | { kind: "rendering"; label: string }
-  | { kind: "success"; label: string }
-  | { kind: "error"; label: string };
-
 export default function App() {
-  const { source, setSource, resetSource } = useEditorState();
+  const { source, setSource } = useEditorState();
   const [svg, setSvg] = useState("");
   const [renderRevision, setRenderRevision] = useState(0);
   const [status, setStatus] = useState<RenderStatus>({
@@ -109,53 +96,14 @@ export default function App() {
 
   return (
     <main className="app">
-      <header className="app-header">
-        <div className="brand">
-          <div className="brand-mark">
-            <Sparkles size={17} />
-          </div>
-          <div>
-            <h1>PlantUML Live</h1>
-            <span>Private, local, offline</span>
-          </div>
-        </div>
-        <div className={`status status-${status.kind}`} role="status">
-          <span className="status-dot" />
-          <span className="status-label">{status.label}</span>
-        </div>
-      </header>
+      <AppHeader status={status} />
 
       <div
         ref={shellRef}
         className="workspace"
         style={{ "--editor-width": `${splitPercent}%` } as React.CSSProperties}
       >
-        <section className="panel editor-panel" aria-label="Source panel">
-          <div className="panel-header">
-            <div className="panel-title">
-              <Code2 size={15} />
-              <span>Source</span>
-              <span className="file-name">diagram.puml</span>
-            </div>
-            <button
-              type="button"
-              className="text-button"
-              onClick={resetSource}
-              title="Restore example"
-            >
-              <RotateCcw size={13} />
-              Reset
-            </button>
-          </div>
-          <div className="editor-body">
-            <LiveToggleCard source={source} onChange={setSource} />
-            <PlantUmlEditor value={source} onChange={setSource} />
-          </div>
-          <footer className="panel-footer">
-            <span>{source.split(/\r\n|\r|\n/).length} lines</span>
-            <span>PlantUML</span>
-          </footer>
-        </section>
+        <EditorPanel source={source} onChange={setSource} />
 
         <div
           className="split-handle"
@@ -169,56 +117,12 @@ export default function App() {
           <span />
         </div>
 
-        <section className="panel preview-panel" aria-label="Preview panel">
-          <div className="panel-header">
-            <div className="panel-title">
-              <span className="preview-icon" />
-              <span>Preview</span>
-              <span className="format-pill">SVG</span>
-            </div>
-            <div className="preview-actions">
-              <span className="interaction-hint">
-                Scroll to zoom · Drag to pan
-              </span>
-              <button
-                type="button"
-                className="text-button"
-                onClick={() => downloadSvg(svg)}
-                disabled={!svg}
-                title="Download SVG"
-              >
-                <Download size={13} />
-                SVG
-              </button>
-              <button
-                type="button"
-                className="text-button"
-                onClick={exportPng}
-                disabled={!svg}
-                title="Download PNG"
-              >
-                <Download size={13} />
-                PNG
-              </button>
-            </div>
-          </div>
-          <div className="preview-body">
-            <DiagramViewport svg={svg} renderRevision={renderRevision} />
-            {status.kind === "error" && (
-              <div className="error-toast" role="alert">
-                <CircleAlert size={17} />
-                <div>
-                  <strong>Diagram error</strong>
-                  <span>{status.label}</span>
-                </div>
-              </div>
-            )}
-          </div>
-          <footer className="panel-footer">
-            <span>Client-side renderer</span>
-            <span>Max 4096 × 4096</span>
-          </footer>
-        </section>
+        <PreviewPanel
+          svg={svg}
+          renderRevision={renderRevision}
+          status={status}
+          onExportPng={exportPng}
+        />
       </div>
     </main>
   );
