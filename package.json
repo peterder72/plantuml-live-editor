@@ -1,0 +1,48 @@
+{
+  "name": "plantuml-live-editor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && bun scripts/verify-build.ts",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "6.18.7",
+    "@codemirror/commands": "6.8.1",
+    "@codemirror/lang-java": "6.0.2",
+    "@codemirror/language": "6.11.3",
+    "@codemirror/state": "6.5.2",
+    "@codemirror/view": "6.38.1",
+    "@lezer/highlight": "1.2.1",
+    "@plantuml/core": "1.2026.6",
+    "dompurify": "3.2.6",
+    "lucide-react": "0.468.0",
+    "react": "19.1.1",
+    "react-dom": "19.1.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.32.0",
+    "@playwright/test": "1.54.2",
+    "@testing-library/jest-dom": "6.6.4",
+    "@testing-library/react": "16.3.0",
+    "@types/node": "24.3.0",
+    "@types/react": "19.1.9",
+    "@types/react-dom": "19.1.7",
+    "@vitejs/plugin-react": "4.7.0",
+    "eslint": "9.32.0",
+    "eslint-plugin-react-hooks": "5.2.0",
+    "eslint-plugin-react-refresh": "0.4.20",
+    "globals": "16.3.0",
+    "jsdom": "26.1.0",
+    "typescript": "5.9.2",
+    "typescript-eslint": "8.39.0",
+    "vite": "7.1.3",
+    "vite-plugin-singlefile": "2.3.0",
+    "vitest": "3.2.4"
+  }
+}

@@ -1,0 +1,486 @@
+:root {
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  color: #dce5ef;
+  background: #0b0f14;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+button {
+  color: inherit;
+  font: inherit;
+}
+
+.app {
+  display: grid;
+  grid-template-rows: 58px minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  background: #0b0f14;
+}
+
+.app-header {
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  border-bottom: 1px solid #25303c;
+  background: #11171f;
+  box-shadow: 0 1px 0 rgb(255 255 255 / 2%);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  color: #0a1118;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #8be9fd, #54d6a9);
+  box-shadow: 0 0 20px rgb(84 214 169 / 15%);
+}
+
+.brand h1 {
+  margin: 0;
+  color: #f2f7fb;
+  font-size: 14px;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+
+.brand span {
+  display: block;
+  margin-top: 2px;
+  color: #738293;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  max-width: min(50vw, 460px);
+  gap: 8px;
+  color: #8190a0;
+  font-size: 11px;
+}
+
+.status-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-dot {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #718096;
+}
+
+.status-rendering .status-dot,
+.status-initializing .status-dot {
+  background: #ffcb6b;
+  box-shadow: 0 0 0 4px rgb(255 203 107 / 9%);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.status-success .status-dot {
+  background: #54d6a9;
+  box-shadow: 0 0 0 4px rgb(84 214 169 / 8%);
+}
+
+.status-error {
+  color: #ff9a9e;
+}
+
+.status-error .status-dot {
+  background: #ff6b74;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.workspace {
+  --editor-width: 50%;
+  display: grid;
+  grid-template-columns: var(--editor-width) 7px minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+}
+
+.panel {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: 42px minmax(0, 1fr) 28px;
+  background: #10151d;
+}
+
+.panel-header,
+.panel-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  border-color: #202a35;
+  color: #6f7d8d;
+  background: #121922;
+}
+
+.panel-header {
+  padding: 0 13px;
+  border-bottom: 1px solid #202a35;
+}
+
+.panel-footer {
+  padding: 0 13px;
+  border-top: 1px solid #202a35;
+  font-size: 10px;
+  letter-spacing: 0.025em;
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 8px;
+  color: #c4cfda;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.file-name {
+  overflow: hidden;
+  color: #667586;
+  font-size: 10px;
+  font-weight: 450;
+  text-overflow: ellipsis;
+  text-transform: none;
+}
+
+.format-pill {
+  padding: 2px 5px;
+  color: #70dbb9;
+  border: 1px solid #295646;
+  border-radius: 4px;
+  background: #122a24;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+}
+
+.preview-icon {
+  width: 11px;
+  height: 9px;
+  border: 1px solid #8291a1;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 2px #121922;
+  background: #8291a1;
+}
+
+.interaction-hint {
+  overflow: hidden;
+  color: #596777;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 7px;
+  color: #798899;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.text-button:hover {
+  color: #d4dee8;
+  background: #1b2531;
+}
+
+.editor-body,
+.editor-host {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.split-handle {
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  border-right: 1px solid #1c2530;
+  border-left: 1px solid #1c2530;
+  background: #0c1117;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.split-handle::before {
+  position: absolute;
+  width: 15px;
+  height: 100%;
+  content: "";
+}
+
+.split-handle span {
+  width: 2px;
+  height: 32px;
+  border-radius: 2px;
+  background: #2a3745;
+  transition: background 120ms ease;
+}
+
+.split-handle:hover span {
+  background: #54d6a9;
+}
+
+.preview-body {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: #0d131a;
+}
+
+.diagram-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.diagram-viewport.is-panning {
+  cursor: grabbing;
+}
+
+.viewport-grid {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, #2a3440 0.75px, transparent 0.8px);
+  background-position: -1px -1px;
+  background-size: 20px 20px;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.diagram-transform {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.diagram-content {
+  display: inline-block;
+  min-width: 1px;
+  min-height: 1px;
+  pointer-events: none;
+}
+
+.diagram-content svg {
+  display: block;
+  overflow: visible;
+  max-width: none;
+  max-height: none;
+  filter: drop-shadow(0 14px 30px rgb(0 0 0 / 25%));
+}
+
+.preview-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 7px;
+  color: #6d7b8b;
+  pointer-events: none;
+}
+
+.preview-placeholder strong {
+  color: #aab6c2;
+  font-size: 12px;
+}
+
+.preview-placeholder span {
+  font-size: 10px;
+}
+
+.placeholder-mark {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 4px;
+  color: #8aa1b5;
+  border: 1px solid #2a3948;
+  border-radius: 14px;
+  background: #131c25;
+  font-family: monospace;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.viewport-controls {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid #2b3744;
+  border-radius: 8px;
+  background: rgb(17 23 31 / 92%);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 28%);
+  backdrop-filter: blur(8px);
+}
+
+.viewport-controls button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: #94a2b1;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.viewport-controls button:hover:not(:disabled) {
+  color: #f0f5f9;
+  background: #263341;
+}
+
+.viewport-controls button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.viewport-controls output {
+  min-width: 40px;
+  color: #aeb9c4;
+  font-family: monospace;
+  font-size: 9px;
+  text-align: center;
+}
+
+.control-divider {
+  width: 1px;
+  height: 17px;
+  margin: 0 3px;
+  background: #2b3744;
+}
+
+.error-toast {
+  position: absolute;
+  right: 14px;
+  bottom: 60px;
+  display: flex;
+  align-items: flex-start;
+  width: min(390px, calc(100% - 28px));
+  gap: 10px;
+  padding: 11px 13px;
+  color: #ff9ba1;
+  border: 1px solid #5b2b31;
+  border-radius: 8px;
+  background: rgb(42 20 25 / 94%);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 30%);
+}
+
+.error-toast svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.error-toast div {
+  min-width: 0;
+}
+
+.error-toast strong,
+.error-toast span {
+  display: block;
+}
+
+.error-toast strong {
+  margin-bottom: 3px;
+  color: #ffd4d6;
+  font-size: 11px;
+}
+
+.error-toast span {
+  overflow: hidden;
+  max-height: 42px;
+  font-family: monospace;
+  font-size: 9px;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 800px) {
+  .app {
+    grid-template-rows: 54px minmax(0, 1fr);
+  }
+
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(230px, 44%) 7px minmax(260px, 56%);
+  }
+
+  .split-handle {
+    border: 0;
+    border-top: 1px solid #1c2530;
+    border-bottom: 1px solid #1c2530;
+    cursor: row-resize;
+  }
+
+  .split-handle span {
+    width: 32px;
+    height: 2px;
+  }
+
+  .interaction-hint,
+  .brand span {
+    display: none;
+  }
+}
