@@ -1,4 +1,10 @@
-import { CircleAlert, Code2, RotateCcw, Sparkles } from "lucide-react";
+import {
+  CircleAlert,
+  Code2,
+  Download,
+  RotateCcw,
+  Sparkles,
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PlantUmlEditor } from "./editor/PlantUmlEditor";
 import { DiagramViewport } from "./preview/DiagramViewport";
@@ -6,6 +12,7 @@ import {
   plantUmlRenderer,
   type RenderResult,
 } from "./rendering/plantumlRenderer";
+import { downloadPng, downloadSvg } from "./rendering/diagramExporter";
 import { useEditorState } from "./state/useEditorState";
 
 type RenderStatus =
@@ -90,6 +97,15 @@ export default function App() {
     window.addEventListener("pointerup", onUp);
   };
 
+  const exportPng = () => {
+    void downloadPng(svg).catch((error: unknown) => {
+      setStatus({
+        kind: "error",
+        label: error instanceof Error ? error.message : "Unable to export PNG.",
+      });
+    });
+  };
+
   return (
     <main className="app">
       <header className="app-header">
@@ -158,7 +174,31 @@ export default function App() {
               <span>Preview</span>
               <span className="format-pill">SVG</span>
             </div>
-            <span className="interaction-hint">Scroll to zoom · Drag to pan</span>
+            <div className="preview-actions">
+              <span className="interaction-hint">
+                Scroll to zoom · Drag to pan
+              </span>
+              <button
+                type="button"
+                className="text-button"
+                onClick={() => downloadSvg(svg)}
+                disabled={!svg}
+                title="Download SVG"
+              >
+                <Download size={13} />
+                SVG
+              </button>
+              <button
+                type="button"
+                className="text-button"
+                onClick={exportPng}
+                disabled={!svg}
+                title="Download PNG"
+              >
+                <Download size={13} />
+                PNG
+              </button>
+            </div>
           </div>
           <div className="preview-body">
             <DiagramViewport svg={svg} renderRevision={renderRevision} />

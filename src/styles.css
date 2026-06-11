@@ -215,6 +215,13 @@ button {
   white-space: nowrap;
 }
 
+.preview-actions {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 2px;
+}
+
 .text-button {
   display: inline-flex;
   align-items: center;
@@ -231,6 +238,16 @@ button {
 .text-button:hover {
   color: #d4dee8;
   background: #1b2531;
+}
+
+.text-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.text-button:disabled:hover {
+  color: #798899;
+  background: transparent;
 }
 
 .editor-body,

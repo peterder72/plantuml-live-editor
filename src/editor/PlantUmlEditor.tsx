@@ -121,6 +121,10 @@ const editorTheme = EditorView.theme({
     padding: "18px 0 48px",
     caretColor: "#82aaff",
   },
+  ".cm-cursor, .cm-dropCursor": {
+    borderLeftColor: "#82aaff",
+    borderLeftWidth: "2px",
+  },
   ".cm-line": {
     padding: "0 18px 0 10px",
   },

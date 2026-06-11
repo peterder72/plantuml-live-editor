@@ -2,4 +2,6 @@ node_modules/
 dist/
 playwright-report/
 test-results/
+.playwright-cli/
+output/
 .DS_Store
