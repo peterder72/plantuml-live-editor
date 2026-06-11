@@ -31,6 +31,15 @@ describe("diagramExporter", () => {
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:diagram");
   });
 
+  it("refuses an active SVG export", () => {
+    expect(() =>
+      downloadSvg(
+        '<svg xmlns="http://www.w3.org/2000/svg"><image href="https://example.test"/></svg>',
+      ),
+    ).toThrow(/unsafe external SVG resource/);
+    expect(createObjectURL).not.toHaveBeenCalled();
+  });
+
   it("rasterizes the SVG viewBox dimensions for PNG", async () => {
     const drawImage = vi.fn();
     const toBlob = vi.fn((callback: BlobCallback) =>

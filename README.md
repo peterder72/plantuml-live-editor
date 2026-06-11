@@ -34,8 +34,9 @@ bun run build
 ```
 
 The build verifier requires `dist/index.html` to be the only output and checks
-that the embedded Graphviz WASM payload is present. Open that file directly in
-a current Chrome, Edge, or Firefox browser; no server or network is required.
+that the embedded Graphviz WASM payload and zero-egress security controls are
+present. Open that file directly in a current Chrome, Edge, or Firefox browser;
+no server or network is required.
 
 For the browser test:
 
@@ -60,5 +61,8 @@ bun run test:e2e
 - Browser-rendered diagrams are limited to 4096 × 4096 pixels.
 - Sudoku is excluded from PlantUML's MIT browser package.
 - Remote `!include` files and network resources are intentionally unsupported.
+- A restrictive Content Security Policy, startup network lockdown, source
+  validation, and inert-SVG allowlist prevent the application and renderer from
+  initiating network requests. This assumes an uncompromised browser and OS.
 - Autocomplete, rich diagnostics, export, sharing, and multiple documents are
   outside the MVP.

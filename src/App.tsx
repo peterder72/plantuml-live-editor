@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PlantUmlEditor } from "./editor/PlantUmlEditor";
+import { LiveToggleCard } from "./liveToggles/LiveToggleCard";
 import { DiagramViewport } from "./preview/DiagramViewport";
 import {
   plantUmlRenderer,
@@ -147,6 +148,7 @@ export default function App() {
             </button>
           </div>
           <div className="editor-body">
+            <LiveToggleCard source={source} onChange={setSource} />
             <PlantUmlEditor value={source} onChange={setSource} />
           </div>
           <footer className="panel-footer">

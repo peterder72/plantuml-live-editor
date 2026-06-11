@@ -12,6 +12,21 @@ export interface PlantUmlRenderer {
 
 type RenderToString = typeof import("@plantuml/core").renderToString;
 
+const FORBIDDEN_SOURCE_PATTERNS: Array<[RegExp, string]> = [
+  [
+    /^\s*!(?:include|include_once|include_many|includeurl|theme|import)\b/im,
+    "Includes, imports, and external themes are disabled for privacy.",
+  ],
+  [
+    /(?:https?|wss?|ftp|file|filesystem|javascript):|(?:^|[\s("'=])\/\//im,
+    "URLs and network resources are disabled for privacy.",
+  ],
+  [
+    /^\s*(?:sprite|skinparam)\b[^\n]*(?:url|https?|file:)/im,
+    "External sprites and resources are disabled for privacy.",
+  ],
+];
+
 class BrowserPlantUmlRenderer implements PlantUmlRenderer {
   private initializePromise: Promise<void> | null = null;
   private renderToString: RenderToString | null = null;
@@ -38,6 +53,7 @@ class BrowserPlantUmlRenderer implements PlantUmlRenderer {
       const startedAt = performance.now();
 
       try {
+        assertOfflineSource(source);
         await this.initialize();
         const renderToString = this.renderToString;
         if (!renderToString) {
@@ -78,6 +94,14 @@ class BrowserPlantUmlRenderer implements PlantUmlRenderer {
       () => undefined,
     );
     return operation;
+  }
+}
+
+export function assertOfflineSource(source: string): void {
+  for (const [pattern, message] of FORBIDDEN_SOURCE_PATTERNS) {
+    if (pattern.test(source)) {
+      throw new Error(message);
+    }
   }
 }
 

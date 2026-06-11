@@ -26,10 +26,12 @@ function readSvgSize(svg: string) {
 }
 
 export function downloadSvg(svg: string, fileName = "diagram.svg") {
+  assertInertSvg(svg);
   triggerDownload(new Blob([svg], { type: SVG_MIME_TYPE }), fileName);
 }
 
 export async function downloadPng(svg: string, fileName = "diagram.png") {
+  assertInertSvg(svg);
   const { width, height } = readSvgSize(svg);
   if (!width || !height) {
     throw new Error("The diagram SVG has no usable dimensions.");
@@ -60,3 +62,4 @@ export async function downloadPng(svg: string, fileName = "diagram.png") {
     URL.revokeObjectURL(url);
   }
 }
+import { assertInertSvg } from "./svgSanitizer";
