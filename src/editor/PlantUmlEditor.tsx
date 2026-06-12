@@ -74,9 +74,31 @@ const keywords = new Set([
   "as",
 ]);
 
-const plantUmlLanguage = StreamLanguage.define({
-  startState: () => ({}),
-  token(stream) {
+interface PlantUmlState {
+  inViewsBlock: boolean;
+}
+
+const plantUmlLanguage = StreamLanguage.define<PlantUmlState>({
+  startState: () => ({ inViewsBlock: false }),
+  token(stream, state) {
+    if (state.inViewsBlock) {
+      if (stream.match(/^@end-plantuml-live-editor views '\//)) {
+        state.inViewsBlock = false;
+        return "comment";
+      }
+      if (stream.match(/^\s+/)) return null;
+      if (stream.match(/^"(?:[^"\\]|\\.)*"(?=\s*:)/)) return "propertyName";
+      if (stream.match(/^"(?:[^"\\]|\\.)*"/)) return "string";
+      if (stream.match(/^(?:true|false)\b/)) return "bool";
+      if (stream.match(/^[{}[\],:]/)) return "punctuation";
+      stream.next();
+      return null;
+    }
+
+    if (stream.match(/^\/' @plantuml-live-editor views v\d+$/)) {
+      state.inViewsBlock = true;
+      return "comment";
+    }
     if (stream.match(/^'.*/)) return "comment";
     if (stream.match(/^\/'.*?'\/$/)) return "comment";
     if (stream.match(/^@(start|end)\w+/i)) return "keyword";
@@ -102,6 +124,9 @@ const highlightStyle = HighlightStyle.define([
   { tag: tags.meta, color: "#ffcb6b" },
   { tag: tags.color, color: "#f78c6c" },
   { tag: tags.variableName, color: "#d6deeb" },
+  { tag: tags.propertyName, color: "#82aaff" },
+  { tag: tags.bool, color: "#f78c6c" },
+  { tag: tags.punctuation, color: "#89ddff" },
 ]);
 
 const editorTheme = EditorView.theme({

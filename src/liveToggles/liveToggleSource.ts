@@ -5,7 +5,7 @@ export interface LiveToggle {
 }
 
 const LIVE_TOGGLE_ASSIGNMENT =
-  /^([ \t]*)!\$(?<name>_live_(?<label>[A-Za-z0-9_]+))(?<beforeEquals>[ \t]*)=(?<afterEquals>[ \t]*)(?<value>true|false)(?<suffix>[ \t]*(?:'.*)?)$/i;
+  /^([ \t]*)!\$(?<name>_live_(?<label>[A-Za-z0-9_]+))(?<beforeEquals>[ \t]*)=(?<afterEquals>[ \t]*)(?<value>%true\(\)|%false\(\)|true|false)(?<suffix>[ \t]*(?:'.*)?)$/i;
 
 function parseLine(line: string) {
   const match = LIVE_TOGGLE_ASSIGNMENT.exec(line);
@@ -18,7 +18,7 @@ function parseLine(line: string) {
     match,
     name,
     label,
-    value: value.toLowerCase() === "true",
+    value: /^(?:%true\(\)|true)$/i.test(value),
   };
 }
 
@@ -54,7 +54,7 @@ export function setLiveToggleValue(
 
       const valueStart = parsed.match.index + parsed.match[0].indexOf(parsed.match.groups!.value);
       const valueEnd = valueStart + parsed.match.groups!.value.length;
-      return `${part.slice(0, valueStart)}${String(value)}${part.slice(valueEnd)}`;
+      return `${part.slice(0, valueStart)}${value ? "%true()" : "%false()"}${part.slice(valueEnd)}`;
     })
     .join("");
 }

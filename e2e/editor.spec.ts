@@ -81,7 +81,7 @@ test("rewrites live boolean toggles and rerenders offline", async ({ page }) => 
 
   const source = [
     "@startuml",
-    "!$_live_SHOW_DETAILS = false",
+    "!$_live_SHOW_DETAILS = %false()",
     "class Always",
     "!if $_live_SHOW_DETAILS",
     "class Details",
@@ -112,12 +112,72 @@ test("rewrites live boolean toggles and rerenders offline", async ({ page }) => 
   await toggle.check();
 
   await expect(page.locator(".cm-content")).toContainText(
-    "!$_live_SHOW_DETAILS = true",
+    "!$_live_SHOW_DETAILS = %true()",
   );
   await expect(page.locator(".diagram-content svg")).toContainText("Details", {
     timeout: 30_000,
   });
   await expect(transform).toHaveAttribute("style", before ?? "");
+});
+
+test("persists independent live toggle values in named views", async ({
+  page,
+}) => {
+  await page.goto(artifactUrl);
+  const source = [
+    "@startuml",
+    "!$_live_DETAILS = %false()",
+    "class Always",
+    "!if $_live_DETAILS",
+    "class Details",
+    "!endif",
+    "@enduml",
+  ].join("\n");
+
+  await page.locator(".cm-content").click();
+  await page.keyboard.press("ControlOrMeta+A");
+  await page.keyboard.insertText(source);
+
+  await expect(page.getByLabel("Active view")).toHaveValue("Default");
+  await page.getByLabel("Create view").click();
+  await page.getByLabel("New view name").fill("Detailed");
+  await page.getByLabel("Save view").click();
+  await expect(page.getByLabel("Active view")).toHaveValue("Detailed");
+
+  await page.getByLabel("DETAILS").check();
+  await expect(page.locator(".cm-content")).toContainText(
+    "!$_live_DETAILS = %true()",
+  );
+  await expect(page.locator(".diagram-content svg")).toContainText("Details", {
+    timeout: 30_000,
+  });
+
+  await page.getByLabel("Active view").selectOption("Default");
+  await expect(page.getByLabel("DETAILS")).not.toBeChecked();
+  await expect(page.locator(".cm-content")).toContainText(
+    "!$_live_DETAILS = %false()",
+  );
+
+  await page.getByLabel("Active view").selectOption("Detailed");
+  await expect(page.getByLabel("DETAILS")).toBeChecked();
+  await expect(page.locator(".cm-content")).toContainText(
+    "!$_live_DETAILS = %true()",
+  );
+  await expect(page.locator(".cm-content")).toContainText(
+    "/' @plantuml-live-editor views v2",
+  );
+  await expect(page.locator(".cm-content")).toContainText(
+    '"activeView": "Detailed"',
+  );
+
+  await page.getByLabel("Rename view").click();
+  await page.getByLabel("Rename view").fill("Expanded");
+  await page.getByLabel("Save renamed view").click();
+  await expect(page.getByLabel("Active view")).toHaveValue("Expanded");
+  await expect(page.locator(".cm-content")).toContainText(
+    '"activeView": "Expanded"',
+  );
+  await expect(page.locator(".cm-content")).not.toContainText('"Detailed":');
 });
 
 test("clicking a class toggles its members in the source", async ({ page }) => {

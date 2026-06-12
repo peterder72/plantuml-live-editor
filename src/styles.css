@@ -297,13 +297,20 @@ button {
 }
 
 .live-toggle-card {
-  display: flex;
+  display: grid;
   flex: 0 0 auto;
-  align-items: flex-start;
-  gap: 14px;
+  gap: 8px;
   padding: 10px 13px;
   border-bottom: 1px solid #202a35;
   background: #121922;
+}
+
+.live-toggle-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  gap: 12px;
 }
 
 .live-toggle-heading {
@@ -317,6 +324,82 @@ button {
   font-weight: 650;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.view-controls,
+.view-select-label,
+.view-create-form {
+  display: flex;
+  align-items: center;
+}
+
+.view-controls {
+  min-width: 0;
+  gap: 4px;
+}
+
+.view-select-label {
+  gap: 6px;
+  color: #667586;
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.view-select-label select,
+.view-create-form input {
+  height: 24px;
+  color: #cbd5df;
+  border: 1px solid #2a3948;
+  border-radius: 5px;
+  outline: none;
+  background: #101720;
+  font-size: 10px;
+}
+
+.view-select-label select {
+  max-width: 150px;
+  padding: 0 24px 0 7px;
+}
+
+.view-create-form {
+  gap: 3px;
+}
+
+.view-create-form input {
+  width: 120px;
+  padding: 0 7px;
+}
+
+.view-select-label select:focus-visible,
+.view-create-form input:focus {
+  border-color: #54d6a9;
+  box-shadow: 0 0 0 2px rgb(84 214 169 / 10%);
+}
+
+.view-icon-button {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  color: #8291a1;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.view-icon-button:hover:not(:disabled) {
+  color: #e4ebf2;
+  border-color: #2a3948;
+  background: #17212b;
+}
+
+.view-icon-button:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .live-toggle-list {
