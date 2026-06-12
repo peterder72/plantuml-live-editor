@@ -1,4 +1,6 @@
+import { SiGithub } from "@icons-pack/react-simple-icons";
 import { Sparkles } from "lucide-react";
+import packageJson from "../../package.json";
 
 export type RenderStatus =
   | { kind: "initializing"; label: string }
@@ -19,12 +21,24 @@ export function AppHeader({ status }: AppHeaderProps) {
         </div>
         <div>
           <h1>PlantUML Live</h1>
-          <span>Private, local, offline</span>
+          <span>v{packageJson.version}</span>
         </div>
       </div>
-      <div className={`status status-${status.kind}`} role="status">
-        <span className="status-dot" />
-        <span className="status-label">{status.label}</span>
+      <div className="header-actions">
+        <div className={`status status-${status.kind}`} role="status">
+          <span className="status-dot" />
+          <span className="status-label">{status.label}</span>
+        </div>
+        <a
+          className="github-link"
+          href="https://github.com/peterder72/plantuml-live-editor"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="View PlantUML Live on GitHub"
+          title="View on GitHub"
+        >
+          <SiGithub size={19} aria-hidden="true" />
+        </a>
       </div>
     </header>
   );

@@ -78,6 +78,37 @@ button {
   letter-spacing: 0.04em;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 14px;
+}
+
+.github-link {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  color: #8190a0;
+  border-radius: 8px;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease;
+}
+
+.github-link:hover {
+  color: #f2f7fb;
+  background: #1a232d;
+}
+
+.github-link:focus-visible {
+  color: #f2f7fb;
+  outline: 2px solid #54d6a9;
+  outline-offset: 2px;
+}
+
 .status {
   display: flex;
   align-items: center;
