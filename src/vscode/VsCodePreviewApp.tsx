@@ -3,6 +3,7 @@ import type { RenderStatus } from "../components/AppHeader";
 import { LiveToggleCard } from "../liveToggles/LiveToggleCard";
 import { PreviewPanel } from "../preview/PreviewPanel";
 import { useDiagramRenderer } from "../rendering/useDiagramRenderer";
+import { toggleHiddenMembers } from "../rendering/classMemberVisibility";
 import type {
   ExtensionToWebviewMessage,
   WebviewToExtensionMessage,
@@ -65,6 +66,9 @@ export function VsCodePreviewApp() {
         renderRevision={renderRevision}
         status={visibleStatus}
         onExportPng={exportPng}
+        onToggleMembers={(entity) =>
+          updateSource(toggleHiddenMembers(source, entity))
+        }
         title={fileName}
       />
     </main>

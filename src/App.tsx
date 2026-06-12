@@ -3,6 +3,7 @@ import { AppHeader } from "./components/AppHeader";
 import { EditorPanel } from "./editor/EditorPanel";
 import { PreviewPanel } from "./preview/PreviewPanel";
 import { useDiagramRenderer } from "./rendering/useDiagramRenderer";
+import { toggleHiddenMembers } from "./rendering/classMemberVisibility";
 import { useEditorState } from "./state/useEditorState";
 
 export default function App() {
@@ -58,6 +59,9 @@ export default function App() {
           renderRevision={renderRevision}
           status={status}
           onExportPng={exportPng}
+          onToggleMembers={(entity) =>
+            setSource((current) => toggleHiddenMembers(current, entity))
+          }
         />
       </div>
     </main>

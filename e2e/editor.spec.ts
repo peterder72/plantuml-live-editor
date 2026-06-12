@@ -120,6 +120,41 @@ test("rewrites live boolean toggles and rerenders offline", async ({ page }) => 
   await expect(transform).toHaveAttribute("style", before ?? "");
 });
 
+test("clicking a class toggles its members in the source", async ({ page }) => {
+  await page.goto(artifactUrl);
+  const source = [
+    "@startuml",
+    "class User {",
+    "  +name: String",
+    "  +login(): void",
+    "}",
+    "@enduml",
+  ].join("\n");
+
+  await page.locator(".cm-content").click();
+  await page.keyboard.press("ControlOrMeta+A");
+  await page.keyboard.insertText(source);
+
+  await expect(page.locator(".diagram-content svg")).toContainText(
+    "login(): void",
+    { timeout: 30_000 },
+  );
+  const entity = page.locator(
+    '.diagram-content g.entity[data-qualified-name="User"], .diagram-content g.entity[data-entity="User"], .diagram-content g.entity#entity_User',
+  );
+  await expect(entity).toBeVisible({ timeout: 30_000 });
+  await entity.click();
+
+  await expect(page.locator(".cm-content")).toContainText("hide User members");
+  await expect(entity).not.toContainText("login", { timeout: 30_000 });
+
+  await entity.click();
+  await expect(page.locator(".cm-content")).not.toContainText(
+    "hide User members",
+  );
+  await expect(entity).toContainText("login", { timeout: 30_000 });
+});
+
 test("blocks remote PlantUML without any egress attempt", async ({
   context,
   page,

@@ -1,4 +1,4 @@
-import { act, render } from "@testing-library/react";
+import { act, fireEvent, render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { DiagramViewport } from "./DiagramViewport";
 
@@ -7,10 +7,13 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100" vi
 describe("DiagramViewport", () => {
   it("preserves the transform when SVG content changes", () => {
     vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 0);
-    const { getByTestId, rerender } = render(
+    const { getByTestId, rerender, container } = render(
       <DiagramViewport svg={svg} renderRevision={1} />,
     );
-    const viewport = getByTestId("diagram-viewport");
+    const viewport = container.querySelector<HTMLElement>(
+      '[data-testid="diagram-viewport"]',
+    );
+    if (!viewport) throw new Error("Viewport was not rendered.");
     Object.defineProperty(viewport, "getBoundingClientRect", {
       value: () => ({
         left: 0,
@@ -48,5 +51,93 @@ describe("DiagramViewport", () => {
     );
 
     expect(getByTestId("diagram-transform").getAttribute("style")).toBe(before);
+  });
+
+  it("toggles members when an entity is clicked without dragging", () => {
+    const onToggleMembers = vi.fn();
+    const entitySvg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="50"><g class="entity" data-entity="User"><rect width="100" height="50"/></g></svg>`;
+    const { container } = render(
+      <DiagramViewport
+        svg={entitySvg}
+        renderRevision={1}
+        onToggleMembers={onToggleMembers}
+      />,
+    );
+    const viewport = container.querySelector<HTMLElement>(
+      '[data-testid="diagram-viewport"]',
+    );
+    if (!viewport) throw new Error("Viewport was not rendered.");
+    const entity = container.querySelector("g[data-entity]");
+    if (!entity) throw new Error("Entity was not rendered.");
+
+    const pointerDownResult = fireEvent(
+      entity,
+      new MouseEvent("pointerdown", {
+        bubbles: true,
+        cancelable: true,
+        clientX: 20,
+        clientY: 20,
+      }),
+    );
+    fireEvent(
+      viewport,
+      new MouseEvent("pointerup", {
+        bubbles: true,
+        cancelable: true,
+        clientX: 20,
+        clientY: 20,
+      }),
+    );
+
+    expect(pointerDownResult).toBe(false);
+    expect(onToggleMembers).toHaveBeenCalledWith("User");
+  });
+
+  it("does not toggle members after a drag", () => {
+    const onToggleMembers = vi.fn();
+    const entitySvg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="50"><g class="entity" id="entity_User"><rect width="100" height="50"/></g></svg>`;
+    const { container } = render(
+      <DiagramViewport
+        svg={entitySvg}
+        renderRevision={1}
+        onToggleMembers={onToggleMembers}
+      />,
+    );
+    const viewport = container.querySelector<HTMLElement>(
+      '[data-testid="diagram-viewport"]',
+    );
+    if (!viewport) throw new Error("Viewport was not rendered.");
+    const entity = container.querySelector("#entity_User");
+    if (!entity) throw new Error("Entity was not rendered.");
+
+    fireEvent(
+      entity,
+      new MouseEvent("pointerdown", {
+        bubbles: true,
+        cancelable: true,
+        clientX: 20,
+        clientY: 20,
+      }),
+    );
+    fireEvent(
+      viewport,
+      new MouseEvent("pointermove", {
+        bubbles: true,
+        cancelable: true,
+        clientX: 40,
+        clientY: 40,
+      }),
+    );
+    fireEvent(
+      viewport,
+      new MouseEvent("pointerup", {
+        bubbles: true,
+        cancelable: true,
+        clientX: 40,
+        clientY: 40,
+      }),
+    );
+
+    expect(onToggleMembers).not.toHaveBeenCalled();
   });
 });

@@ -395,7 +395,12 @@ button {
   display: inline-block;
   min-width: 1px;
   min-height: 1px;
-  pointer-events: none;
+}
+
+.diagram-content g.entity[data-qualified-name],
+.diagram-content g.entity[data-entity],
+.diagram-content g.entity[id^="entity_"] {
+  cursor: pointer;
 }
 
 .diagram-content svg {
@@ -403,6 +408,13 @@ button {
   overflow: visible;
   max-width: none;
   max-height: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.diagram-content svg text {
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .preview-placeholder {

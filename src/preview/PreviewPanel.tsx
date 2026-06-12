@@ -10,6 +10,7 @@ interface PreviewPanelProps {
   renderRevision: number;
   status: RenderStatus;
   onExportPng: () => void;
+  onToggleMembers?: (entity: string) => void;
   title?: string;
 }
 
@@ -18,11 +19,14 @@ export function PreviewPanel({
   renderRevision,
   status,
   onExportPng,
+  onToggleMembers,
   title = "Preview",
 }: PreviewPanelProps) {
   const actions = (
     <div className="preview-actions">
-      <span className="interaction-hint">Scroll to zoom · Drag to pan</span>
+      <span className="interaction-hint">
+        Scroll to zoom · Drag to pan · Click a class to hide members
+      </span>
       <TextButton
         icon={<Download size={13} />}
         onClick={() => downloadSvg(svg)}
@@ -55,7 +59,11 @@ export function PreviewPanel({
         actions={actions}
       />
       <div className="preview-body">
-        <DiagramViewport svg={svg} renderRevision={renderRevision} />
+        <DiagramViewport
+          svg={svg}
+          renderRevision={renderRevision}
+          onToggleMembers={onToggleMembers}
+        />
         {status.kind === "error" && (
           <div className="error-toast" role="alert">
             <CircleAlert size={17} />

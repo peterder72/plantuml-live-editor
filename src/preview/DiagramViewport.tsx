@@ -15,6 +15,7 @@ import { ViewportControls } from "./ViewportControls";
 interface DiagramViewportProps {
   svg: string;
   renderRevision: number;
+  onToggleMembers?: (entity: string) => void;
 }
 
 interface DiagramSize {
@@ -25,6 +26,7 @@ interface DiagramSize {
 export function DiagramViewport({
   svg,
   renderRevision,
+  onToggleMembers,
 }: DiagramViewportProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -34,6 +36,9 @@ export function DiagramViewport({
     scale: number;
     midpoint: { x: number; y: number };
   } | null>(null);
+  const pointerStartRef = useRef(
+    new Map<number, { x: number; y: number; target: EventTarget | null }>(),
+  );
   const hasFitInitialRef = useRef(false);
   const [diagramSize, setDiagramSize] = useState<DiagramSize | null>(null);
   const [isPanning, setIsPanning] = useState(false);
@@ -99,11 +104,17 @@ export function DiagramViewport({
   }, [relativePoint, transform.scale, zoomAt]);
 
   const onPointerDown = (event: ReactPointerEvent) => {
-    event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
     pointersRef.current.set(
       event.pointerId,
       relativePoint(event.clientX, event.clientY),
     );
+    pointerStartRef.current.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
+      target: event.target,
+    });
     setIsPanning(true);
   };
 
@@ -157,7 +168,17 @@ export function DiagramViewport({
   };
 
   const releasePointer = (event: ReactPointerEvent) => {
+    const start = pointerStartRef.current.get(event.pointerId);
+    if (
+      event.type === "pointerup" &&
+      start &&
+      Math.hypot(event.clientX - start.x, event.clientY - start.y) < 5
+    ) {
+      const entity = findDiagramEntity(start.target);
+      if (entity) onToggleMembers?.(entity);
+    }
     pointersRef.current.delete(event.pointerId);
+    pointerStartRef.current.delete(event.pointerId);
     pinchRef.current = null;
     if (pointersRef.current.size === 0) setIsPanning(false);
   };
@@ -215,4 +236,21 @@ export function DiagramViewport({
       />
     </div>
   );
+}
+
+function findDiagramEntity(target: EventTarget | null): string | null {
+  if (!(target instanceof Element)) return null;
+  const group = target.closest<SVGGElement>(
+    "g.entity[data-qualified-name], g.entity[data-entity], g.entity[id^='entity_']",
+  );
+  if (!group) return null;
+
+  const dataEntity = (
+    group.getAttribute("data-qualified-name") ??
+    group.getAttribute("data-entity")
+  )?.trim();
+  if (dataEntity) return dataEntity;
+
+  const id = group.id;
+  return id.startsWith("entity_") ? id.slice("entity_".length) : null;
 }
