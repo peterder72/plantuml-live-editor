@@ -1,4 +1,4 @@
-import { fireEvent, render } from "@testing-library/react";
+import { act, render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { DiagramViewport } from "./DiagramViewport";
 
@@ -25,7 +25,19 @@ describe("DiagramViewport", () => {
       }),
     });
 
-    fireEvent.wheel(viewport, { clientX: 400, clientY: 300, deltaY: -500 });
+    const wheelEvent = new WheelEvent("wheel", {
+      bubbles: true,
+      cancelable: true,
+      clientX: 400,
+      clientY: 300,
+      deltaY: -500,
+    });
+    let dispatchResult = true;
+    act(() => {
+      dispatchResult = viewport.dispatchEvent(wheelEvent);
+    });
+    expect(dispatchResult).toBe(false);
+    expect(wheelEvent.defaultPrevented).toBe(true);
     const before = getByTestId("diagram-transform").getAttribute("style");
 
     rerender(

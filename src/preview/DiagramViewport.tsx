@@ -1,6 +1,5 @@
 import {
   type PointerEvent as ReactPointerEvent,
-  type WheelEvent as ReactWheelEvent,
   useCallback,
   useEffect,
   useRef,
@@ -84,12 +83,20 @@ export function DiagramViewport({
     };
   }, []);
 
-  const onWheel = (event: ReactWheelEvent) => {
-    event.preventDefault();
-    const point = relativePoint(event.clientX, event.clientY);
-    const factor = Math.exp(-event.deltaY * 0.0015);
-    zoomAt(transform.scale * factor, point);
-  };
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const point = relativePoint(event.clientX, event.clientY);
+      const factor = Math.exp(-event.deltaY * 0.0015);
+      zoomAt(transform.scale * factor, point);
+    };
+
+    viewport.addEventListener("wheel", onWheel, { passive: false });
+    return () => viewport.removeEventListener("wheel", onWheel);
+  }, [relativePoint, transform.scale, zoomAt]);
 
   const onPointerDown = (event: ReactPointerEvent) => {
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -169,7 +176,6 @@ export function DiagramViewport({
       ref={viewportRef}
       className={`diagram-viewport${isPanning ? " is-panning" : ""}`}
       data-testid="diagram-viewport"
-      onWheel={onWheel}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={releasePointer}
