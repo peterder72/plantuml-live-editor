@@ -160,7 +160,9 @@ const editorTheme = EditorView.theme({
     paddingLeft: "6px",
   },
   ".cm-activeLine, .cm-activeLineGutter": {
-    backgroundColor: "#17202b",
+    // The selection layer is behind line decorations. Keep this translucent so
+    // a selection on the active line remains visible.
+    backgroundColor: "#17202b80",
   },
   ".cm-selectionBackground, &.cm-focused .cm-selectionBackground": {
     backgroundColor: "#29466b !important",
