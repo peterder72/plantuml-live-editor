@@ -2,13 +2,37 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { LiveToggleCard } from "./LiveToggleCard";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe("LiveToggleCard", () => {
-  it("does not render without live variables", () => {
+  it("shows an add flag button without live variables", () => {
     render(<LiveToggleCard source="@startuml\n@enduml" onChange={vi.fn()} />);
 
-    expect(screen.queryByText("Live toggles")).not.toBeInTheDocument();
+    expect(screen.getByText("Live toggles")).toBeInTheDocument();
+    expect(screen.getByLabelText("Add flag")).toBeInTheDocument();
+  });
+
+  it("adds a named flag from the toolbar after @startuml", () => {
+    const onChange = vi.fn();
+    render(
+      <LiveToggleCard
+        source={"@startuml\n@enduml"}
+        onChange={onChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByLabelText("Add flag"));
+    fireEvent.change(screen.getByLabelText("New flag name"), {
+      target: { value: "SHOW_DETAILS" },
+    });
+    fireEvent.click(screen.getByLabelText("Save flag"));
+
+    expect(onChange).toHaveBeenCalledWith(
+      "@startuml\n!$_live_SHOW_DETAILS = %false()\n@enduml",
+    );
   });
 
   it("renders exact suffix labels and emits rewritten source", () => {

@@ -1,6 +1,6 @@
 import { Check, Pencil, Plus, SlidersHorizontal, X } from "lucide-react";
 import { useState } from "react";
-import { findLiveToggles } from "./liveToggleSource";
+import { addLiveToggle, findLiveToggles } from "./liveToggleSource";
 import {
   createLiveToggleView,
   readLiveToggleViews,
@@ -19,8 +19,9 @@ export function LiveToggleCard({ source, onChange }: LiveToggleCardProps) {
     null,
   );
   const [viewName, setViewName] = useState("");
+  const [isAddingFlag, setIsAddingFlag] = useState(false);
+  const [flagName, setFlagName] = useState("");
   const toggles = findLiveToggles(source);
-  if (toggles.length === 0) return null;
   const viewState = readLiveToggleViews(source);
   const normalizedName = viewName.trim();
   const duplicateName = viewState.views.some((view) => {
@@ -34,6 +35,10 @@ export function LiveToggleCard({ source, onChange }: LiveToggleCardProps) {
       view.name.toLocaleLowerCase() === normalizedName.toLocaleLowerCase()
     );
   });
+  const normalizedFlagName = flagName.trim();
+  const invalidFlagName =
+    !/^[A-Za-z0-9_]+$/.test(normalizedFlagName) ||
+    toggles.some((toggle) => toggle.label === normalizedFlagName);
 
   const saveViewName = () => {
     if (!normalizedName || duplicateName) return;
@@ -46,12 +51,68 @@ export function LiveToggleCard({ source, onChange }: LiveToggleCardProps) {
     setViewFormMode(null);
   };
 
+  const saveFlag = () => {
+    if (invalidFlagName) return;
+    onChange(addLiveToggle(source, normalizedFlagName));
+    setFlagName("");
+    setIsAddingFlag(false);
+  };
+
   return (
     <section className="live-toggle-card" aria-labelledby="live-toggle-title">
       <div className="live-toggle-toolbar">
         <div className="live-toggle-heading">
           <SlidersHorizontal size={13} />
           <span id="live-toggle-title">Live toggles</span>
+          {!isAddingFlag ? (
+            <button
+              className="view-icon-button"
+              type="button"
+              aria-label="Add flag"
+              title="Add flag"
+              onClick={() => setIsAddingFlag(true)}
+            >
+              <Plus size={13} />
+            </button>
+          ) : (
+            <form
+              className="view-create-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                saveFlag();
+              }}
+            >
+              <input
+                autoFocus
+                aria-label="New flag name"
+                value={flagName}
+                maxLength={80}
+                placeholder="Flag name"
+                onChange={(event) => setFlagName(event.target.value)}
+              />
+              <button
+                className="view-icon-button"
+                type="submit"
+                aria-label="Save flag"
+                title={invalidFlagName ? "Use a unique letters, numbers, or underscores name" : "Save flag"}
+                disabled={invalidFlagName}
+              >
+                <Check size={13} />
+              </button>
+              <button
+                className="view-icon-button"
+                type="button"
+                aria-label="Cancel adding flag"
+                title="Cancel"
+                onClick={() => {
+                  setFlagName("");
+                  setIsAddingFlag(false);
+                }}
+              >
+                <X size={13} />
+              </button>
+            </form>
+          )}
         </div>
         <div className="view-controls">
           <label className="view-select-label">
@@ -143,26 +204,28 @@ export function LiveToggleCard({ source, onChange }: LiveToggleCardProps) {
           )}
         </div>
       </div>
-      <div className="live-toggle-list">
-        {toggles.map((toggle) => (
-          <label className="live-toggle-control" key={toggle.name}>
-            <input
-              type="checkbox"
-              checked={toggle.value}
-              onChange={(event) =>
-                onChange(
-                  setLiveToggleValueForActiveView(
-                    source,
-                    toggle.name,
-                    event.target.checked,
-                  ),
-                )
-              }
-            />
-            <span>{toggle.label}</span>
-          </label>
-        ))}
-      </div>
+      {toggles.length > 0 && (
+        <div className="live-toggle-list">
+          {toggles.map((toggle) => (
+            <label className="live-toggle-control" key={toggle.name}>
+              <input
+                type="checkbox"
+                checked={toggle.value}
+                onChange={(event) =>
+                  onChange(
+                    setLiveToggleValueForActiveView(
+                      source,
+                      toggle.name,
+                      event.target.checked,
+                    ),
+                  )
+                }
+              />
+              <span>{toggle.label}</span>
+            </label>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

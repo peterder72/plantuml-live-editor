@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { findLiveToggles, setLiveToggleValue } from "./liveToggleSource";
+import {
+  addLiveToggle,
+  findLiveToggles,
+  setLiveToggleValue,
+} from "./liveToggleSource";
 
 describe("findLiveToggles", () => {
   it("detects boolean assignments in source order", () => {
@@ -66,5 +70,23 @@ describe("setLiveToggleValue", () => {
     expect(setLiveToggleValue(source, "_live_FLAG", true)).toBe(
       "!$_live_FLAG=%true()\n!$_live_flag=false",
     );
+  });
+});
+
+describe("addLiveToggle", () => {
+  it("adds a disabled toggle immediately after the @startuml line", () => {
+    expect(addLiveToggle("@startuml\n@enduml", "SHOW_DETAILS")).toBe(
+      "@startuml\n!$_live_SHOW_DETAILS = %false()\n@enduml",
+    );
+  });
+
+  it("preserves CRLF endings and rejects invalid or duplicate names", () => {
+    const source = "!$_live_EXISTING = %true()\r\n@startuml\r\n@enduml";
+
+    expect(addLiveToggle(source, "NEW_FLAG")).toBe(
+      "!$_live_EXISTING = %true()\r\n@startuml\r\n!$_live_NEW_FLAG = %false()\r\n@enduml",
+    );
+    expect(addLiveToggle(source, "not valid")).toBe(source);
+    expect(addLiveToggle(source, "EXISTING")).toBe(source);
   });
 });
