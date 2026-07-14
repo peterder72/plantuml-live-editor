@@ -12,6 +12,7 @@ interface PreviewPanelProps {
   onExportPng: () => void;
   onToggleMembers?: (entity: string) => void;
   title?: string;
+  showStatusInFooter?: boolean;
 }
 
 export function PreviewPanel({
@@ -21,6 +22,7 @@ export function PreviewPanel({
   onExportPng,
   onToggleMembers,
   title = "Preview",
+  showStatusInFooter = false,
 }: PreviewPanelProps) {
   const actions = (
     <div className="preview-actions">
@@ -74,7 +76,10 @@ export function PreviewPanel({
           </div>
         )}
       </div>
-      <PanelFooter start="Client-side renderer" end="Max 4096 × 4096" />
+      <PanelFooter
+        start={showStatusInFooter ? status.label : "Client-side renderer"}
+        end="Max 4096 × 4096"
+      />
     </section>
   );
 }

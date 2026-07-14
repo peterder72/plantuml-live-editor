@@ -38,6 +38,11 @@ class PreviewPanel {
           void this.postDocumentState();
         }
       }),
+      vscode.window.onDidChangeTextEditorSelection((event) => {
+        if (event.textEditor.document.uri.toString() === document.uri.toString()) {
+          void this.postDocumentState();
+        }
+      }),
     );
   }
 
@@ -73,6 +78,31 @@ class PreviewPanel {
         type: "showError",
         message: "VS Code could not apply the toggle edit.",
       });
+      return;
+    }
+
+    if (message.selectionAfter) {
+      const editor = vscode.window.visibleTextEditors.find(
+        (candidate) =>
+          candidate.document.uri.toString() === this.document.uri.toString(),
+      );
+      if (editor) {
+        const sourceLength = this.document.getText().length;
+        const from = Math.max(
+          0,
+          Math.min(message.selectionAfter.from, sourceLength),
+        );
+        const to = Math.max(
+          0,
+          Math.min(message.selectionAfter.to, sourceLength),
+        );
+        const selection = new vscode.Selection(
+          this.document.positionAt(from),
+          this.document.positionAt(to),
+        );
+        editor.selection = selection;
+        editor.revealRange(selection, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+      }
     }
   }
 
@@ -82,7 +112,20 @@ class PreviewPanel {
       source: this.document.getText(),
       version: this.document.version,
       fileName: this.document.fileName.split(/[\\/]/).pop() ?? "PlantUML",
+      selection: this.getDocumentSelection(),
     });
+  }
+
+  private getDocumentSelection() {
+    const editor = vscode.window.visibleTextEditors.find(
+      (candidate) =>
+        candidate.document.uri.toString() === this.document.uri.toString(),
+    );
+    if (!editor) return { from: 0, to: 0 };
+    return {
+      from: this.document.offsetAt(editor.selection.anchor),
+      to: this.document.offsetAt(editor.selection.active),
+    };
   }
 
   private postMessage(message: ExtensionToWebviewMessage) {
@@ -135,36 +178,39 @@ class PreviewPanel {
 
 export function activate(context: vscode.ExtensionContext) {
   const previews = new Map<string, PreviewPanel>();
+  const openPreview = () => {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || !isPlantUmlDocument(editor.document)) {
+      void vscode.window.showErrorMessage(
+        "Open a PlantUML file before opening the preview.",
+      );
+      return;
+    }
+
+    const key = editor.document.uri.toString();
+    const existing = previews.get(key);
+    if (existing) {
+      existing.reveal(vscode.ViewColumn.Beside);
+      return;
+    }
+
+    const panel = vscode.window.createWebviewPanel(
+      VIEW_TYPE,
+      `Preview ${editor.document.fileName.split(/[\\/]/).pop()}`,
+      { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true },
+      { retainContextWhenHidden: true },
+    );
+    const preview = new PreviewPanel(context, editor.document, panel, () =>
+      previews.delete(key),
+    );
+    previews.set(key, preview);
+  };
 
   context.subscriptions.push(
-    vscode.commands.registerCommand(PREVIEW_COMMAND, () => {
-      const editor = vscode.window.activeTextEditor;
-      if (!editor || !isPlantUmlDocument(editor.document)) {
-        void vscode.window.showErrorMessage(
-          "Open a PlantUML file before opening the preview.",
-        );
-        return;
-      }
-
-      const key = editor.document.uri.toString();
-      const existing = previews.get(key);
-      if (existing) {
-        existing.reveal(vscode.ViewColumn.Beside);
-        return;
-      }
-
-      const panel = vscode.window.createWebviewPanel(
-        VIEW_TYPE,
-        `Preview ${editor.document.fileName.split(/[\\/]/).pop()}`,
-        { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true },
-        { retainContextWhenHidden: true },
-      );
-      const preview = new PreviewPanel(context, editor.document, panel, () =>
-        previews.delete(key),
-      );
-      previews.set(key, preview);
-    }),
+    vscode.commands.registerCommand(PREVIEW_COMMAND, openPreview),
   );
+
+  return { getPreviewCount: () => previews.size };
 }
 
 function isPlantUmlDocument(document: vscode.TextDocument) {

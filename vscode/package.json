@@ -1,10 +1,25 @@
 {
-  "name": "plantuml-live-preview",
-  "displayName": "PlantUML Live Preview",
-  "description": "Offline PlantUML preview with pan, zoom, fit, export, and live boolean toggles.",
-  "version": "0.1.0",
-  "publisher": "local",
-  "license": "MIT",
+  "name": "plantuml-live-editor",
+  "displayName": "PlantUML Live Editor",
+  "description": "Private, offline PlantUML preview with live flags, named views, pan, zoom, and SVG/PNG export.",
+  "version": "0.2.0",
+  "publisher": "peterder72",
+  "license": "SEE LICENSE IN LICENSE",
+  "icon": "images/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/peterder72/plantuml-live-editor.git"
+  },
+  "homepage": "https://github.com/peterder72/plantuml-live-editor#readme",
+  "bugs": {
+    "url": "https://github.com/peterder72/plantuml-live-editor/issues"
+  },
+  "galleryBanner": {
+    "color": "#11171f",
+    "theme": "dark"
+  },
+  "markdown": "github",
+  "qna": "marketplace",
   "engines": {
     "vscode": "^1.96.0"
   },
@@ -16,12 +31,25 @@
     "uml",
     "diagram",
     "offline",
-    "preview"
+    "preview",
+    "graphviz",
+    "teavm",
+    "live flags",
+    "class diagram",
+    "component diagram"
   ],
   "main": "./dist/extension.cjs",
   "extensionKind": [
     "ui"
   ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": {
+      "supported": true
+    }
+  },
   "contributes": {
     "commands": [
       {
@@ -42,8 +70,12 @@
   },
   "files": [
     "dist",
+    "images/icon.png",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md",
+    "SUPPORT.md",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "scripts": {
     "build:host": "vite build --config vite.extension.config.ts",

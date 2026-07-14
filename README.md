@@ -59,6 +59,10 @@ Create an installable VSIX:
 bun run package:vscode
 ```
 
+The root `package.json` is the release-version source of truth. VS Code builds
+synchronize that version into the extension manifest before verification and
+packaging.
+
 After installing the VSIX, open a PlantUML document and run
 **PlantUML: Open Preview to the Side**. The extension uses VS Code's native text
 editor and keeps rendering, live toggles, pan, zoom, fit, reset, and export in
@@ -85,5 +89,4 @@ an offline webview.
 - A restrictive Content Security Policy, startup network lockdown, source
   validation, and inert-SVG allowlist prevent the application and renderer from
   initiating network requests. This assumes an uncompromised browser and OS.
-- Autocomplete, rich diagnostics, export, sharing, and multiple documents are
-  outside the MVP.
+- Autocomplete, rich diagnostics, and sharing are outside the MVP.

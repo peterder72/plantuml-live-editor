@@ -3,6 +3,7 @@ dist/
 playwright-report/
 test-results/
 .playwright-cli/
+.vscode-test/
 output/
 .DS_Store
 *.vsix
