@@ -120,6 +120,38 @@ test("rewrites live boolean toggles and rerenders offline", async ({ page }) => 
   await expect(transform).toHaveAttribute("style", before ?? "");
 });
 
+test("wraps selected source lines with a live flag", async ({ page }) => {
+  await page.goto(artifactUrl);
+  const source = [
+    "@startuml",
+    "!$_live_DETAILS = %false()",
+    "class Always",
+    "class Details",
+    "@enduml",
+  ].join("\n");
+
+  await page.locator(".cm-content").click();
+  await page.keyboard.press("ControlOrMeta+A");
+  await page.keyboard.insertText(source);
+  await page.locator(".cm-content").getByText("class Details").selectText();
+
+  const wrap = page.getByRole("button", { name: "Wrap selection" });
+  await expect(wrap).toBeEnabled();
+  await wrap.click();
+  await page.getByRole("menuitem", { name: "DETAILS Off" }).click();
+  await expect(page.locator(".cm-content")).toBeFocused();
+  await expect(page.locator(".cm-content")).toContainText("!if $_live_DETAILS");
+  await expect(page.locator(".cm-content")).toContainText("!endif");
+  await expect(page.locator(".diagram-content svg")).not.toContainText("Details", {
+    timeout: 30_000,
+  });
+
+  await page.getByLabel("DETAILS").check();
+  await expect(page.locator(".diagram-content svg")).toContainText("Details", {
+    timeout: 30_000,
+  });
+});
+
 test("persists independent live toggle values in named views", async ({
   page,
 }) => {

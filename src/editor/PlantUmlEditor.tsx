@@ -10,7 +10,7 @@ import {
   StreamLanguage,
   syntaxHighlighting,
 } from "@codemirror/language";
-import { EditorState } from "@codemirror/state";
+import { EditorSelection, EditorState } from "@codemirror/state";
 import {
   drawSelection,
   EditorView,
@@ -21,10 +21,13 @@ import {
 } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 import { useEffect, useRef } from "react";
+import type { SourceSelection } from "../liveToggles/liveToggleWrap";
 
 interface PlantUmlEditorProps {
   value: string;
   onChange: (value: string) => void;
+  selection: SourceSelection;
+  onSelectionChange: (selection: SourceSelection) => void;
 }
 
 const keywords = new Set([
@@ -170,12 +173,19 @@ const editorTheme = EditorView.theme({
   "&.cm-focused": { outline: "none" },
 });
 
-export function PlantUmlEditor({ value, onChange }: PlantUmlEditorProps) {
+export function PlantUmlEditor({
+  value,
+  onChange,
+  selection,
+  onSelectionChange,
+}: PlantUmlEditorProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const changeHandlerRef = useRef(onChange);
+  const selectionHandlerRef = useRef(onSelectionChange);
   const initialValueRef = useRef(value);
   changeHandlerRef.current = onChange;
+  selectionHandlerRef.current = onSelectionChange;
 
   useEffect(() => {
     if (!hostRef.current) return;
@@ -205,6 +215,10 @@ export function PlantUmlEditor({ value, onChange }: PlantUmlEditorProps) {
             if (update.docChanged) {
               changeHandlerRef.current(update.state.doc.toString());
             }
+            if (update.docChanged || update.selectionSet) {
+              const main = update.state.selection.main;
+              selectionHandlerRef.current({ from: main.from, to: main.to });
+            }
           }),
         ],
       }),
@@ -224,6 +238,15 @@ export function PlantUmlEditor({ value, onChange }: PlantUmlEditorProps) {
       changes: { from: 0, to: view.state.doc.length, insert: value },
     });
   }, [value]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    const main = view.state.selection.main;
+    if (main.from === selection.from && main.to === selection.to) return;
+    view.dispatch({ selection: EditorSelection.range(selection.from, selection.to) });
+    view.focus();
+  }, [selection]);
 
   return (
     <div

@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Code2 } from "lucide-react";
 import { PanelFooter, PanelHeader } from "../components/Panel";
 import { LiveToggleCard } from "../liveToggles/LiveToggleCard";
+import type { SourceSelection } from "../liveToggles/liveToggleWrap";
 import { PlantUmlEditor } from "./PlantUmlEditor";
 
 interface EditorPanelProps {
@@ -9,6 +11,8 @@ interface EditorPanelProps {
 }
 
 export function EditorPanel({ source, onChange }: EditorPanelProps) {
+  const [selection, setSelection] = useState<SourceSelection>({ from: 0, to: 0 });
+
   return (
     <section className="panel editor-panel" aria-label="Source panel">
       <PanelHeader
@@ -21,8 +25,21 @@ export function EditorPanel({ source, onChange }: EditorPanelProps) {
         }
       />
       <div className="editor-body">
-        <LiveToggleCard source={source} onChange={onChange} />
-        <PlantUmlEditor value={source} onChange={onChange} />
+        <LiveToggleCard
+          source={source}
+          selection={selection}
+          onChange={onChange}
+          onWrap={(wrapped) => {
+            setSelection(wrapped.selection);
+            onChange(wrapped.source);
+          }}
+        />
+        <PlantUmlEditor
+          value={source}
+          onChange={onChange}
+          selection={selection}
+          onSelectionChange={setSelection}
+        />
       </div>
       <PanelFooter
         start={`${source.split(/\r\n|\r|\n/).length} lines`}

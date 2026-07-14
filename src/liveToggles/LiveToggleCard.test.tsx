@@ -35,6 +35,97 @@ describe("LiveToggleCard", () => {
     );
   });
 
+  it("enables wrapping only with both a selection and a flag", () => {
+    const { rerender } = render(
+      <LiveToggleCard
+        source={"@startuml\n!$_live_DETAILS = %true()\nclass User\n@enduml"}
+        selection={{ from: 0, to: 0 }}
+        onChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText("DETAILS")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Wrap selection" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Wrap selection" })).toHaveAttribute(
+      "title",
+      "Select one or more lines to wrap.",
+    );
+    rerender(
+      <LiveToggleCard
+        source={"@startuml\n!$_live_DETAILS = %true()\nclass User\n@enduml"}
+        selection={{ from: 40, to: 50 }}
+        onChange={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Wrap selection" })).toBeEnabled();
+  });
+
+  it("explains that a live toggle is required before wrapping", () => {
+    render(
+      <LiveToggleCard
+        source={"@startuml\nclass User\n@enduml"}
+        selection={{ from: 10, to: 20 }}
+        onChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Wrap selection" })).toHaveAttribute(
+      "title",
+      "Add a live toggle first.",
+    );
+  });
+
+  it("shows flag state and supports keyboard navigation in the wrap menu", () => {
+    render(
+      <LiveToggleCard
+        source={"!$_live_DETAILS = %false()\n!$_live_GRID = %true()"}
+        selection={{ from: 0, to: 1 }}
+        onChange={vi.fn()}
+      />,
+    );
+
+    const trigger = screen.getByRole("button", { name: "Wrap selection" });
+    fireEvent.click(trigger);
+
+    const details = screen.getByRole("menuitem", { name: "DETAILS Off" });
+    const grid = screen.getByRole("menuitem", { name: "GRID On" });
+    expect(screen.getByRole("menu", { name: "Wrap with live flag" })).toBeInTheDocument();
+    expect(details).toHaveFocus();
+
+    fireEvent.keyDown(details, { key: "ArrowDown" });
+    expect(grid).toHaveFocus();
+    fireEvent.keyDown(grid, { key: "Escape" });
+    expect(trigger).toHaveFocus();
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+
+    fireEvent.click(trigger);
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+
+  it("wraps selected lines with the chosen flag", () => {
+    const onWrap = vi.fn();
+    const source = "@startuml\n!$_live_DETAILS = %false()\nclass User\n@enduml";
+    const from = source.indexOf("User");
+    render(
+      <LiveToggleCard
+        source={source}
+        selection={{ from, to: from + 1 }}
+        onChange={vi.fn()}
+        onWrap={onWrap}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Wrap selection" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "DETAILS Off" }));
+    expect(onWrap).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "@startuml\n!$_live_DETAILS = %false()\n!if $_live_DETAILS\nclass User\n!endif\n@enduml",
+      }),
+    );
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+
   it("renders exact suffix labels and emits rewritten source", () => {
     const onChange = vi.fn();
     render(

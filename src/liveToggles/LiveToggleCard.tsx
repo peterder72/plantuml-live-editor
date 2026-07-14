@@ -1,6 +1,18 @@
-import { Check, Pencil, Plus, SlidersHorizontal, X } from "lucide-react";
-import { useState } from "react";
+import {
+  Check,
+  ChevronDown,
+  Pencil,
+  Plus,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
 import { addLiveToggle, findLiveToggles } from "./liveToggleSource";
+import {
+  type SourceSelection,
+  type WrappedLiveToggleSelection,
+  wrapSelectionWithLiveToggle,
+} from "./liveToggleWrap";
 import {
   createLiveToggleView,
   readLiveToggleViews,
@@ -12,15 +24,27 @@ import {
 interface LiveToggleCardProps {
   source: string;
   onChange: (source: string) => void;
+  selection?: SourceSelection;
+  onWrap?: (wrapped: WrappedLiveToggleSelection) => void;
 }
 
-export function LiveToggleCard({ source, onChange }: LiveToggleCardProps) {
+export function LiveToggleCard({
+  source,
+  onChange,
+  selection = { from: 0, to: 0 },
+  onWrap,
+}: LiveToggleCardProps) {
   const [viewFormMode, setViewFormMode] = useState<"create" | "rename" | null>(
     null,
   );
   const [viewName, setViewName] = useState("");
   const [isAddingFlag, setIsAddingFlag] = useState(false);
   const [flagName, setFlagName] = useState("");
+  const [isWrapMenuOpen, setIsWrapMenuOpen] = useState(false);
+  const wrapMenuId = useId();
+  const wrapMenuRef = useRef<HTMLDivElement>(null);
+  const wrapTriggerRef = useRef<HTMLButtonElement>(null);
+  const wrapItemRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const toggles = findLiveToggles(source);
   const viewState = readLiveToggleViews(source);
   const normalizedName = viewName.trim();
@@ -39,6 +63,36 @@ export function LiveToggleCard({ source, onChange }: LiveToggleCardProps) {
   const invalidFlagName =
     !/^[A-Za-z0-9_]+$/.test(normalizedFlagName) ||
     toggles.some((toggle) => toggle.label === normalizedFlagName);
+  const canWrap = selection.from !== selection.to && toggles.length > 0;
+  const wrapUnavailableReason =
+    toggles.length === 0
+      ? "Add a live toggle first."
+      : "Select one or more lines to wrap.";
+
+  useEffect(() => {
+    if (!canWrap) setIsWrapMenuOpen(false);
+  }, [canWrap]);
+
+  useEffect(() => {
+    if (!isWrapMenuOpen) return;
+
+    wrapItemRefs.current[0]?.focus();
+
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (
+        !wrapMenuRef.current?.contains(target) &&
+        !wrapTriggerRef.current?.contains(target)
+      ) {
+        setIsWrapMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    return () =>
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+  }, [isWrapMenuOpen]);
 
   const saveViewName = () => {
     if (!normalizedName || duplicateName) return;
@@ -56,6 +110,50 @@ export function LiveToggleCard({ source, onChange }: LiveToggleCardProps) {
     onChange(addLiveToggle(source, normalizedFlagName));
     setFlagName("");
     setIsAddingFlag(false);
+  };
+
+  const wrapWithToggle = (toggleName: string) => {
+    const wrapped = wrapSelectionWithLiveToggle(source, selection, toggleName);
+    setIsWrapMenuOpen(false);
+    if (wrapped) onWrap?.(wrapped);
+  };
+
+  const handleWrapMenuKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+  ) => {
+    const currentIndex = wrapItemRefs.current.findIndex(
+      (item) => item === document.activeElement,
+    );
+    let nextIndex: number | null = null;
+
+    switch (event.key) {
+      case "ArrowDown":
+        nextIndex = (currentIndex + 1) % toggles.length;
+        break;
+      case "ArrowUp":
+        nextIndex =
+          (currentIndex - 1 + toggles.length) % toggles.length;
+        break;
+      case "Home":
+        nextIndex = 0;
+        break;
+      case "End":
+        nextIndex = toggles.length - 1;
+        break;
+      case "Escape":
+        event.preventDefault();
+        setIsWrapMenuOpen(false);
+        wrapTriggerRef.current?.focus();
+        return;
+      case "Tab":
+        setIsWrapMenuOpen(false);
+        return;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    wrapItemRefs.current[nextIndex]?.focus();
   };
 
   return (
@@ -115,6 +213,61 @@ export function LiveToggleCard({ source, onChange }: LiveToggleCardProps) {
           )}
         </div>
         <div className="view-controls">
+          <div className="wrap-action-container">
+            <button
+              ref={wrapTriggerRef}
+              className="wrap-action-trigger"
+              type="button"
+              aria-controls={isWrapMenuOpen ? wrapMenuId : undefined}
+              aria-expanded={isWrapMenuOpen}
+              aria-haspopup="menu"
+              disabled={!canWrap}
+              title={canWrap ? "Wrap selection with a live flag" : wrapUnavailableReason}
+              onClick={() => setIsWrapMenuOpen((isOpen) => !isOpen)}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowDown" && !isWrapMenuOpen) {
+                  event.preventDefault();
+                  setIsWrapMenuOpen(true);
+                }
+              }}
+            >
+              <span>Wrap selection</span>
+              <ChevronDown size={12} aria-hidden="true" />
+            </button>
+            {isWrapMenuOpen && (
+              <div
+                ref={wrapMenuRef}
+                className="wrap-action-menu"
+                id={wrapMenuId}
+                role="menu"
+                aria-label="Wrap with live flag"
+              >
+                <div className="wrap-action-menu-title">Wrap with live flag</div>
+                {toggles.map((toggle, index) => (
+                  <button
+                    ref={(item) => {
+                      wrapItemRefs.current[index] = item;
+                    }}
+                    className="wrap-action-menu-item"
+                    key={toggle.name}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => wrapWithToggle(toggle.name)}
+                    onKeyDown={handleWrapMenuKeyDown}
+                  >
+                    <span className="wrap-action-menu-name">{toggle.label}</span>
+                    <span
+                      className={`wrap-action-menu-state ${
+                        toggle.value ? "is-on" : "is-off"
+                      }`}
+                    >
+                      {toggle.value ? "On" : "Off"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <label className="view-select-label">
             <span>View</span>
             <select
