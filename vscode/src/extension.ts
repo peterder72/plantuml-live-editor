@@ -13,6 +13,15 @@ class PreviewPanel {
   private disposed = false;
   private ready = false;
   private readonly disposables: vscode.Disposable[] = [];
+  private lastDocumentVersionSent = 0;
+  private lastSelectionSent = { from: 0, to: 0 };
+  private lastRendered:
+    | {
+        documentVersion: number;
+        renderRevision: number;
+        svgFingerprint: string;
+      }
+    | undefined;
 
   constructor(
     private readonly context: vscode.ExtensionContext,
@@ -26,7 +35,6 @@ class PreviewPanel {
         vscode.Uri.joinPath(context.extensionUri, "dist", "webview"),
       ],
     };
-    panel.webview.html = this.getHtml(panel.webview);
 
     this.disposables.push(
       panel.onDidDispose(() => this.dispose()),
@@ -44,16 +52,36 @@ class PreviewPanel {
         }
       }),
     );
+
+    panel.webview.html = this.getHtml(panel.webview);
   }
 
   reveal(column: vscode.ViewColumn) {
     this.panel.reveal(column);
   }
 
+  getState() {
+    return {
+      ready: this.ready,
+      lastDocumentVersionSent: this.lastDocumentVersionSent,
+      lastSelectionSent: this.lastSelectionSent,
+      lastRendered: this.lastRendered,
+    };
+  }
+
   private async handleMessage(message: WebviewToExtensionMessage) {
     if (message.type === "ready") {
       this.ready = true;
       await this.postDocumentState();
+      return;
+    }
+
+    if (message.type === "rendered") {
+      this.lastRendered = {
+        documentVersion: message.documentVersion,
+        renderRevision: message.renderRevision,
+        svgFingerprint: message.svgFingerprint,
+      };
       return;
     }
 
@@ -107,12 +135,14 @@ class PreviewPanel {
   }
 
   private postDocumentState() {
+    this.lastDocumentVersionSent = this.document.version;
+    this.lastSelectionSent = this.getDocumentSelection();
     return this.postMessage({
       type: "documentState",
       source: this.document.getText(),
       version: this.document.version,
       fileName: this.document.fileName.split(/[\\/]/).pop() ?? "PlantUML",
-      selection: this.getDocumentSelection(),
+      selection: this.lastSelectionSent,
     });
   }
 
@@ -210,7 +240,10 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(PREVIEW_COMMAND, openPreview),
   );
 
-  return { getPreviewCount: () => previews.size };
+  return {
+    getPreviewCount: () => previews.size,
+    getPreviewState: (uri: string) => previews.get(uri)?.getState(),
+  };
 }
 
 function isPlantUmlDocument(document: vscode.TextDocument) {

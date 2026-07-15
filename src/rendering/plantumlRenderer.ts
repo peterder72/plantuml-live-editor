@@ -10,7 +10,36 @@ export interface PlantUmlRenderer {
   render(source: string, renderId: number): Promise<RenderResult>;
 }
 
+export const RENDER_TIMEOUT_MS = 30_000;
+
 type RenderToString = typeof import("@plantuml/core").renderToString;
+
+export function renderToSvg(
+  renderToString: RenderToString,
+  source: string,
+  timeoutMs = RENDER_TIMEOUT_MS,
+): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    const timeout = window.setTimeout(
+      () => reject(new Error("PlantUML rendering timed out.")),
+      timeoutMs,
+    );
+    const settle = (callback: () => void) => {
+      window.clearTimeout(timeout);
+      callback();
+    };
+
+    try {
+      renderToString(
+        source.split(/\r\n|\r|\n/),
+        (value) => settle(() => resolve(value)),
+        (message) => settle(() => reject(new Error(normalizeError(message)))),
+      );
+    } catch (error) {
+      settle(() => reject(error));
+    }
+  });
+}
 
 const FORBIDDEN_SOURCE_PATTERNS: Array<[RegExp, string]> = [
   [
@@ -60,13 +89,7 @@ class BrowserPlantUmlRenderer implements PlantUmlRenderer {
           throw new Error("PlantUML renderer did not initialize.");
         }
 
-        const svg = await new Promise<string>((resolve, reject) => {
-          renderToString(
-            source.split(/\r\n|\r|\n/),
-            resolve,
-            (message) => reject(new Error(normalizeError(message))),
-          );
-        });
+        const svg = await renderToSvg(renderToString, source);
 
         const diagnostic = getPlantUmlDiagnostic(svg);
         if (diagnostic) {

@@ -15,6 +15,31 @@ async function waitFor(predicate, description) {
 }
 
 async function run() {
+  const unsupportedUri = vscode.Uri.file(
+    path.join(os.tmpdir(), `plantuml-live-editor-${Date.now()}.txt`),
+  );
+  await vscode.workspace.fs.writeFile(
+    unsupportedUri,
+    new TextEncoder().encode("not a PlantUML document"),
+  );
+  const unsupportedDocument =
+    await vscode.workspace.openTextDocument(unsupportedUri);
+  await vscode.window.showTextDocument(unsupportedDocument);
+
+  const extension = vscode.extensions.getExtension(
+    "peterder72.plantuml-live-editor",
+  );
+  assert.ok(extension, "development extension is discoverable");
+  const extensionApi = await extension.activate();
+  assert.equal(typeof extensionApi.getPreviewCount, "function");
+
+  await vscode.commands.executeCommand(PREVIEW_COMMAND);
+  assert.equal(
+    extensionApi.getPreviewCount(),
+    0,
+    "unsupported documents do not create previews",
+  );
+
   const sourceUri = vscode.Uri.file(
     path.join(os.tmpdir(), `plantuml-live-editor-${Date.now()}.puml`),
   );
@@ -26,12 +51,6 @@ async function run() {
   const editor = await vscode.window.showTextDocument(document);
   assert.equal(vscode.window.activeTextEditor?.document, document);
 
-  const extension = vscode.extensions.getExtension(
-    "peterder72.plantuml-live-editor",
-  );
-  assert.ok(extension, "development extension is discoverable");
-  const extensionApi = await extension.activate();
-  assert.equal(typeof extensionApi.getPreviewCount, "function");
   await vscode.window.showTextDocument(document);
   assert.equal(vscode.window.activeTextEditor?.document, document);
 
@@ -45,6 +64,26 @@ async function run() {
     "the preview webview panel",
   );
 
+  await waitFor(() => {
+    const state = extensionApi.getPreviewState(sourceUri.toString());
+    return (
+      state?.ready &&
+      state.lastRendered?.documentVersion === document.version
+    );
+  }, "the initial diagram render");
+  const initialState = extensionApi.getPreviewState(sourceUri.toString());
+  const initialFingerprint = initialState.lastRendered.svgFingerprint;
+  const initialRevision = initialState.lastRendered.renderRevision;
+
+  editor.selection = new vscode.Selection(
+    new vscode.Position(1, 0),
+    new vscode.Position(1, 5),
+  );
+  await waitFor(() => {
+    const state = extensionApi.getPreviewState(sourceUri.toString());
+    return state?.lastSelectionSent.from === 10 && state.lastSelectionSent.to === 15;
+  }, "the native editor selection to reach the webview");
+
   const editApplied = await editor.edit((builder) => {
     builder.insert(new vscode.Position(2, 0), "Bob --> Alice: Hi\n");
   });
@@ -52,11 +91,25 @@ async function run() {
   assert.match(document.getText(), /Bob --> Alice: Hi/);
   assert.equal(extensionApi.getPreviewCount(), 1, "source edits reuse the preview panel");
 
+  await waitFor(() => {
+    const state = extensionApi.getPreviewState(sourceUri.toString());
+    return (
+      state?.lastRendered?.documentVersion === document.version &&
+      state.lastRendered.renderRevision > initialRevision &&
+      state.lastRendered.svgFingerprint !== initialFingerprint
+    );
+  }, "the edited document to produce a different SVG");
+
   await vscode.commands.executeCommand(PREVIEW_COMMAND);
   assert.equal(extensionApi.getPreviewCount(), 1, "reopening reuses the preview panel");
 
   await vscode.commands.executeCommand("workbench.action.closeAllEditors");
+  await waitFor(
+    () => extensionApi.getPreviewCount() === 0,
+    "the preview panel to dispose",
+  );
   await vscode.workspace.fs.delete(sourceUri);
+  await vscode.workspace.fs.delete(unsupportedUri);
 }
 
 module.exports = { run };

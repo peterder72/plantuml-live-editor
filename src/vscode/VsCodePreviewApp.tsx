@@ -23,18 +23,20 @@ interface VsCodePreviewAppProps {
 export function VsCodePreviewApp({ api }: VsCodePreviewAppProps = {}) {
   const [vscode] = useState(() => api ?? acquireVsCodeApi());
   const [source, setSource] = useState("");
+  const [hasDocumentState, setHasDocumentState] = useState(false);
   const [version, setVersion] = useState(0);
   const [fileName, setFileName] = useState("PlantUML");
   const [selection, setSelection] = useState<SourceSelection>({ from: 0, to: 0 });
   const [hostError, setHostError] = useState<string | null>(null);
-  const { svg, renderRevision, status, exportPng } =
-    useDiagramRenderer(source);
+  const { svg, renderRevision, acceptedRender, status, exportPng } =
+    useDiagramRenderer(hasDocumentState ? source : null);
 
   useEffect(() => {
     const receiveMessage = (event: MessageEvent<ExtensionToWebviewMessage>) => {
       const message = event.data;
       if (message.type === "documentState") {
         setSource(message.source);
+        setHasDocumentState(true);
         setVersion(message.version);
         setFileName(message.fileName);
         setSelection(message.selection);
@@ -48,6 +50,32 @@ export function VsCodePreviewApp({ api }: VsCodePreviewAppProps = {}) {
     vscode.postMessage({ type: "ready" });
     return () => window.removeEventListener("message", receiveMessage);
   }, [vscode]);
+
+  useEffect(() => {
+    if (
+      !hasDocumentState ||
+      !acceptedRender ||
+      acceptedRender.source !== source ||
+      status.kind !== "success"
+    ) {
+      return;
+    }
+    vscode.postMessage({
+      type: "rendered",
+      documentVersion: version,
+      renderRevision,
+      svgFingerprint: fingerprint(svg),
+    });
+  }, [
+    acceptedRender,
+    hasDocumentState,
+    renderRevision,
+    source,
+    status.kind,
+    svg,
+    version,
+    vscode,
+  ]);
 
   const updateSource = (
     nextSource: string,
@@ -91,4 +119,13 @@ export function VsCodePreviewApp({ api }: VsCodePreviewAppProps = {}) {
       />
     </main>
   );
+}
+
+function fingerprint(value: string) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
 }

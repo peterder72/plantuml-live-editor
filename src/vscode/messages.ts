@@ -19,6 +19,13 @@ export interface ReplaceSourceMessage {
   selectionAfter?: SourceSelection;
 }
 
+export interface RenderedMessage {
+  type: "rendered";
+  documentVersion: number;
+  renderRevision: number;
+  svgFingerprint: string;
+}
+
 export interface ShowErrorMessage {
   type: "showError";
   message: string;
@@ -30,4 +37,5 @@ export type ExtensionToWebviewMessage =
 
 export type WebviewToExtensionMessage =
   | ReadyMessage
-  | ReplaceSourceMessage;
+  | ReplaceSourceMessage
+  | RenderedMessage;

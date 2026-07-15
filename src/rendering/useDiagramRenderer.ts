@@ -6,9 +6,22 @@ import {
   type RenderResult,
 } from "./plantumlRenderer";
 
-export function useDiagramRenderer(source: string) {
+interface RenderRequest {
+  source: string;
+  renderId: number;
+}
+
+interface AcceptedRender {
+  source: string;
+  renderId: number;
+}
+
+export function useDiagramRenderer(source: string | null) {
   const [svg, setSvg] = useState("");
   const [renderRevision, setRenderRevision] = useState(0);
+  const [acceptedRender, setAcceptedRender] = useState<AcceptedRender | null>(
+    null,
+  );
   const [status, setStatus] = useState<RenderStatus>({
     kind: "initializing",
     label: "Loading engine",
@@ -16,8 +29,13 @@ export function useDiagramRenderer(source: string) {
   const hasSvgRef = useRef(false);
   const renderIdRef = useRef(0);
   const latestAcceptedRef = useRef(0);
+  const renderingRef = useRef(false);
+  const pendingRef = useRef<RenderRequest | null>(null);
+  const mountedRef = useRef(true);
+  const runRequestRef = useRef<(request: RenderRequest) => void>(() => {});
 
-  const acceptResult = useCallback((result: RenderResult) => {
+  const acceptResult = useCallback((result: RenderResult, source: string) => {
+    if (!mountedRef.current) return;
     if (
       result.renderId !== renderIdRef.current ||
       result.renderId < latestAcceptedRef.current
@@ -30,6 +48,7 @@ export function useDiagramRenderer(source: string) {
       hasSvgRef.current = true;
       setSvg(result.svg);
       setRenderRevision((revision) => revision + 1);
+      setAcceptedRender({ source, renderId: result.renderId });
       setStatus({
         kind: "success",
         label: `Rendered in ${Math.round(result.durationMs)} ms`,
@@ -42,8 +61,38 @@ export function useDiagramRenderer(source: string) {
     }
   }, []);
 
+  const runRequest = useCallback(
+    (request: RenderRequest) => {
+      renderingRef.current = true;
+      void plantUmlRenderer
+        .render(request.source, request.renderId)
+        .then((result) => acceptResult(result, request.source))
+        .finally(() => {
+          renderingRef.current = false;
+          const pending = pendingRef.current;
+          pendingRef.current = null;
+          if (pending && mountedRef.current) runRequestRef.current(pending);
+        });
+    },
+    [acceptResult],
+  );
+  runRequestRef.current = runRequest;
+
   useEffect(() => {
-    const renderId = ++renderIdRef.current;
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      pendingRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (source === null) return;
+
+    const request = {
+      source,
+      renderId: ++renderIdRef.current,
+    };
     const hasSvg = hasSvgRef.current;
     setStatus((current) =>
       hasSvg
@@ -54,12 +103,19 @@ export function useDiagramRenderer(source: string) {
     );
 
     const timeout = window.setTimeout(() => {
-      setStatus({ kind: "rendering", label: "Rendering diagram" });
-      void plantUmlRenderer.render(source, renderId).then(acceptResult);
+      setStatus({
+        kind: "rendering",
+        label: hasSvgRef.current ? "Rendering changes" : "Rendering diagram",
+      });
+      if (renderingRef.current) {
+        pendingRef.current = request;
+      } else {
+        runRequestRef.current(request);
+      }
     }, hasSvg ? 300 : 0);
 
     return () => window.clearTimeout(timeout);
-  }, [acceptResult, source]);
+  }, [source]);
 
   const exportPng = useCallback(() => {
     void downloadPng(svg).catch((error: unknown) => {
@@ -70,5 +126,5 @@ export function useDiagramRenderer(source: string) {
     });
   }, [svg]);
 
-  return { svg, renderRevision, status, exportPng };
+  return { svg, renderRevision, acceptedRender, status, exportPng };
 }

@@ -1,8 +1,40 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   assertOfflineSource,
   getPlantUmlDiagnostic,
+  renderToSvg,
 } from "./plantumlRenderer";
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe("renderToSvg", () => {
+  it("rejects when the TeaVM renderer never invokes either callback", async () => {
+    vi.useFakeTimers();
+    const renderToString = vi.fn();
+    const result = renderToSvg(renderToString, "@startuml\n@enduml", 100);
+    const rejection = expect(result).rejects.toThrow(
+      "PlantUML rendering timed out.",
+    );
+
+    await vi.advanceTimersByTimeAsync(100);
+
+    await rejection;
+  });
+
+  it("clears the timeout after a successful callback", async () => {
+    vi.useFakeTimers();
+    const renderToString = vi.fn((_lines, onSuccess) => {
+      onSuccess('<svg xmlns="http://www.w3.org/2000/svg" />');
+    });
+
+    await expect(
+      renderToSvg(renderToString, "@startuml\n@enduml", 100),
+    ).resolves.toContain("<svg");
+    expect(vi.getTimerCount()).toBe(0);
+  });
+});
 
 describe("getPlantUmlDiagnostic", () => {
   it("recognizes PlantUML syntax-error SVG output", () => {

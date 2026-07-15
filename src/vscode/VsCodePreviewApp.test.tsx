@@ -1,9 +1,14 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { plantUmlRenderer } from "../rendering/plantumlRenderer";
 import { VsCodePreviewApp, type VsCodeApi } from "./VsCodePreviewApp";
 import type { ExtensionToWebviewMessage } from "./messages";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+  vi.useRealTimers();
+});
 
 function send(message: ExtensionToWebviewMessage) {
   fireEvent(
@@ -15,6 +20,142 @@ function send(message: ExtensionToWebviewMessage) {
 }
 
 describe("VsCodePreviewApp", () => {
+  it("waits for the first document snapshot and replaces the rendered SVG after edits", async () => {
+    vi.useFakeTimers();
+    const renderSpy = vi
+      .spyOn(plantUmlRenderer, "render")
+      .mockResolvedValueOnce({
+        ok: true,
+        svg: '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10"><text>Initial participant</text></svg>',
+        renderId: 1,
+        durationMs: 1,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        svg: '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10"><text>Updated participant</text></svg>',
+        renderId: 2,
+        durationMs: 2,
+      });
+
+    render(<VsCodePreviewApp api={{ postMessage: vi.fn() }} />);
+    await act(async () => vi.runAllTimersAsync());
+    expect(renderSpy).not.toHaveBeenCalled();
+
+    const source = "@startuml\nAlice -> Bob\n@enduml";
+    send({
+      type: "documentState",
+      source,
+      version: 1,
+      fileName: "example.puml",
+      selection: { from: 0, to: 0 },
+    });
+    await act(async () => vi.runAllTimersAsync());
+
+    expect(renderSpy).toHaveBeenCalledWith(source, 1);
+    expect(screen.getByText("Initial participant")).toBeInTheDocument();
+
+    const updated = "@startuml\nBob -> Carol\n@enduml";
+    send({
+      type: "documentState",
+      source: updated,
+      version: 2,
+      fileName: "example.puml",
+      selection: { from: 0, to: 0 },
+    });
+    await act(async () => vi.advanceTimersByTimeAsync(300));
+
+    expect(renderSpy).toHaveBeenLastCalledWith(updated, 2);
+    expect(screen.getByText("Updated participant")).toBeInTheDocument();
+    expect(screen.queryByText("Initial participant")).not.toBeInTheDocument();
+    expect(screen.getByText("Rendered in 2 ms")).toBeInTheDocument();
+  });
+
+  it("keeps the last valid diagram when a later render fails and then recovers", async () => {
+    vi.useFakeTimers();
+    vi.spyOn(plantUmlRenderer, "render")
+      .mockResolvedValueOnce({
+        ok: true,
+        svg: '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10"><text>Last valid</text></svg>',
+        renderId: 1,
+        durationMs: 1,
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        error: "PlantUML rendering timed out.",
+        renderId: 2,
+        durationMs: 30_000,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        svg: '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10"><text>Recovered</text></svg>',
+        renderId: 3,
+        durationMs: 3,
+      });
+    render(<VsCodePreviewApp api={{ postMessage: vi.fn() }} />);
+
+    send({
+      type: "documentState",
+      source: "@startuml\nAlice -> Bob\n@enduml",
+      version: 1,
+      fileName: "example.puml",
+      selection: { from: 0, to: 0 },
+    });
+    await act(async () => vi.runAllTimersAsync());
+
+    send({
+      type: "documentState",
+      source: "@startuml\nbroken",
+      version: 2,
+      fileName: "example.puml",
+      selection: { from: 0, to: 0 },
+    });
+    await act(async () => vi.advanceTimersByTimeAsync(300));
+    expect(screen.getByText("Last valid")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "PlantUML rendering timed out.",
+    );
+
+    send({
+      type: "documentState",
+      source: "@startuml\nAlice -> Carol\n@enduml",
+      version: 3,
+      fileName: "example.puml",
+      selection: { from: 0, to: 0 },
+    });
+    await act(async () => vi.advanceTimersByTimeAsync(300));
+    expect(screen.getByText("Recovered")).toBeInTheDocument();
+    expect(screen.queryByText("Last valid")).not.toBeInTheDocument();
+  });
+
+  it("renders only the latest snapshot from a rapid document burst", async () => {
+    vi.useFakeTimers();
+    const renderSpy = vi.spyOn(plantUmlRenderer, "render").mockResolvedValue({
+      ok: true,
+      svg: '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><text>Latest</text></svg>',
+      renderId: 3,
+      durationMs: 1,
+    });
+    render(<VsCodePreviewApp api={{ postMessage: vi.fn() }} />);
+
+    for (const [index, participant] of ["Bob", "Carol", "Dave"].entries()) {
+      send({
+        type: "documentState",
+        source: `@startuml\nAlice -> ${participant}\n@enduml`,
+        version: index + 1,
+        fileName: "example.puml",
+        selection: { from: 0, to: 0 },
+      });
+    }
+    await act(async () => vi.runAllTimersAsync());
+
+    expect(renderSpy).toHaveBeenCalledTimes(1);
+    expect(renderSpy).toHaveBeenCalledWith(
+      "@startuml\nAlice -> Dave\n@enduml",
+      3,
+    );
+    expect(screen.getByText("Latest")).toBeInTheDocument();
+  });
+
   it("uses native editor selection to wrap source and restore selection", () => {
     const postMessage = vi.fn<VsCodeApi["postMessage"]>();
     const source = [
@@ -86,6 +227,15 @@ describe("VsCodePreviewApp", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "The document changed before the edit.",
     );
+
+    send({
+      type: "documentState",
+      source: "@startuml\n!$_live_DETAILS = %true()\n@enduml",
+      version: 4,
+      fileName: "flags.puml",
+      selection: { from: 0, to: 0 },
+    });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("shows renderer status in the preview footer", () => {
