@@ -4,6 +4,7 @@ const path = require("node:path");
 const vscode = require("vscode");
 
 const PREVIEW_COMMAND = "plantumlLive.openPreview";
+const PLANTUML_EXTENSIONS = ["puml", "plantuml", "pu", "iuml", "wsd"];
 
 async function waitFor(predicate, description) {
   const deadline = Date.now() + 10_000;
@@ -50,6 +51,7 @@ async function run() {
   const document = await vscode.workspace.openTextDocument(sourceUri);
   const editor = await vscode.window.showTextDocument(document);
   assert.equal(vscode.window.activeTextEditor?.document, document);
+  assert.equal(document.languageId, "plantuml", ".puml is recognized as PlantUML");
 
   await vscode.window.showTextDocument(document);
   assert.equal(vscode.window.activeTextEditor?.document, document);
@@ -110,6 +112,26 @@ async function run() {
   );
   await vscode.workspace.fs.delete(sourceUri);
   await vscode.workspace.fs.delete(unsupportedUri);
+
+  for (const extension of PLANTUML_EXTENSIONS) {
+    const languageUri = vscode.Uri.file(
+      path.join(
+        os.tmpdir(),
+        `plantuml-language-${Date.now()}-${extension}.${extension}`,
+      ),
+    );
+    await vscode.workspace.fs.writeFile(
+      languageUri,
+      new TextEncoder().encode("@startuml\nAlice -> Bob\n@enduml\n"),
+    );
+    const languageDocument = await vscode.workspace.openTextDocument(languageUri);
+    assert.equal(
+      languageDocument.languageId,
+      "plantuml",
+      `.${extension} is recognized as PlantUML`,
+    );
+    await vscode.workspace.fs.delete(languageUri);
+  }
 }
 
 module.exports = { run };

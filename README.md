@@ -65,8 +65,8 @@ packaging.
 
 After installing the VSIX, open a PlantUML document and run
 **PlantUML: Open Preview to the Side**. The extension uses VS Code's native text
-editor and keeps rendering, live toggles, pan, zoom, fit, reset, and export in
-an offline webview.
+editor with bundled PlantUML syntax highlighting and keeps rendering, live
+toggles, pan, zoom, fit, reset, and export in an offline webview.
 
 ## Architecture
 

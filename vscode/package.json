@@ -51,6 +51,29 @@
     }
   },
   "contributes": {
+    "languages": [
+      {
+        "id": "plantuml",
+        "aliases": [
+          "PlantUML"
+        ],
+        "extensions": [
+          ".puml",
+          ".plantuml",
+          ".pu",
+          ".iuml",
+          ".wsd"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "plantuml",
+        "scopeName": "source.wsd",
+        "path": "./syntaxes/plantuml.tmLanguage.json"
+      }
+    ],
     "commands": [
       {
         "command": "plantumlLive.openPreview",
@@ -71,6 +94,8 @@
   "files": [
     "dist",
     "images/icon.png",
+    "syntaxes",
+    "language-configuration.json",
     "LICENSE",
     "README.md",
     "CHANGELOG.md",

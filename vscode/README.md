@@ -20,6 +20,8 @@ without discarding the last valid diagram.
 
 ## Features
 
+- Built-in PlantUML syntax highlighting and native comment, bracket, and
+  auto-closing behavior for every supported file extension.
 - Offline class, component, sequence, activity, and other diagrams supported by
   PlantUML's MIT browser engine.
 - Pointer-centered wheel zoom, touch pinch zoom, drag-to-pan, fit, and reset.

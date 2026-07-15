@@ -1,10 +1,14 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import { resolve } from "node:path";
+import { listFiles, PackageManager } from "@vscode/vsce";
 
 const extensionPath = resolve("vscode/dist/extension.cjs");
 const webviewPath = resolve("vscode/dist/webview/webview.js");
 const stylePath = resolve("vscode/dist/webview/style.css");
 const iconPath = resolve("vscode/images/icon.png");
+const grammarPath = resolve("vscode/syntaxes/plantuml.tmLanguage.json");
+const languageConfigurationPath = resolve("vscode/language-configuration.json");
+const grammarLicensePath = resolve("vscode/syntaxes/LICENSE.qjebbs.txt");
 
 const [
   extension,
@@ -15,6 +19,9 @@ const [
   rootManifestText,
   extensionManifestText,
   icon,
+  grammarText,
+  languageConfigurationText,
+  grammarLicenseText,
 ] =
   await Promise.all([
     readFile(extensionPath, "utf8"),
@@ -25,6 +32,9 @@ const [
     readFile(resolve("package.json"), "utf8"),
     readFile(resolve("vscode/package.json"), "utf8"),
     readFile(iconPath),
+    readFile(grammarPath, "utf8"),
+    readFile(languageConfigurationPath, "utf8"),
+    readFile(grammarLicensePath, "utf8"),
   ]);
 
 const rootManifest = JSON.parse(rootManifestText) as { version?: string };
@@ -40,6 +50,18 @@ const extensionManifest = JSON.parse(extensionManifestText) as {
   galleryBanner?: { color?: string; theme?: string };
   capabilities?: Record<string, unknown>;
   files?: string[];
+  contributes?: {
+    languages?: Array<{
+      id?: string;
+      extensions?: string[];
+      configuration?: string;
+    }>;
+    grammars?: Array<{
+      language?: string;
+      scopeName?: string;
+      path?: string;
+    }>;
+  };
 };
 
 if (extensionManifest.version !== rootManifest.version) {
@@ -66,6 +88,8 @@ for (const [field, value] of requiredMetadata) {
 for (const packagedFile of [
   "dist",
   "images/icon.png",
+  "syntaxes",
+  "language-configuration.json",
   "LICENSE",
   "README.md",
   "CHANGELOG.md",
@@ -74,6 +98,80 @@ for (const packagedFile of [
 ]) {
   if (!extensionManifest.files?.includes(packagedFile)) {
     throw new Error(`Extension files list is missing: ${packagedFile}`);
+  }
+}
+
+const expectedPlantUmlExtensions = [
+  ".puml",
+  ".plantuml",
+  ".pu",
+  ".iuml",
+  ".wsd",
+];
+const plantUmlLanguage = extensionManifest.contributes?.languages?.find(
+  (language) => language.id === "plantuml",
+);
+if (
+  !plantUmlLanguage ||
+  JSON.stringify(plantUmlLanguage.extensions) !==
+    JSON.stringify(expectedPlantUmlExtensions) ||
+  plantUmlLanguage.configuration !== "./language-configuration.json"
+) {
+  throw new Error("Extension manifest has an invalid PlantUML language contribution.");
+}
+
+const plantUmlGrammar = extensionManifest.contributes?.grammars?.find(
+  (grammar) => grammar.language === "plantuml",
+);
+if (
+  !plantUmlGrammar ||
+  plantUmlGrammar.scopeName !== "source.wsd" ||
+  plantUmlGrammar.path !== "./syntaxes/plantuml.tmLanguage.json"
+) {
+  throw new Error("Extension manifest has an invalid PlantUML grammar contribution.");
+}
+
+const grammar = JSON.parse(grammarText) as {
+  scopeName?: string;
+  patterns?: unknown[];
+};
+if (grammar.scopeName !== "source.wsd" || !grammar.patterns?.length) {
+  throw new Error("PlantUML TextMate grammar is missing its scope or patterns.");
+}
+
+const languageConfiguration = JSON.parse(languageConfigurationText) as {
+  comments?: { lineComment?: string; blockComment?: string[] };
+  brackets?: unknown[];
+  autoClosingPairs?: unknown[];
+};
+if (
+  languageConfiguration.comments?.lineComment !== "'" ||
+  languageConfiguration.comments.blockComment?.join("") !== "/''/" ||
+  !languageConfiguration.brackets?.length ||
+  !languageConfiguration.autoClosingPairs?.length
+) {
+  throw new Error("PlantUML language configuration is incomplete.");
+}
+
+if (
+  !grammarLicenseText.includes("Copyright (c) 2016 jebbs") ||
+  !grammarLicenseText.includes("The MIT License")
+) {
+  throw new Error("PlantUML grammar license notice is incomplete.");
+}
+
+const packageFiles = await listFiles({
+  cwd: resolve("vscode"),
+  packageManager: PackageManager.None,
+});
+for (const requiredPackageFile of [
+  "language-configuration.json",
+  "syntaxes/LICENSE.qjebbs.txt",
+  "syntaxes/plantuml.tmLanguage.json",
+  "THIRD_PARTY_NOTICES.md",
+]) {
+  if (!packageFiles.includes(requiredPackageFile)) {
+    throw new Error(`VSIX contents are missing: ${requiredPackageFile}`);
   }
 }
 
