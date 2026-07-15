@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- Added "if" statement preprocessor collapsing in the editor
+
 ## 0.2.0
 
 - Added native-editor selection wrapping for live flags.

@@ -141,16 +141,60 @@ if (grammar.scopeName !== "source.wsd" || !grammar.patterns?.length) {
 
 const languageConfiguration = JSON.parse(languageConfigurationText) as {
   comments?: { lineComment?: string; blockComment?: string[] };
+  folding?: { markers?: { start?: string; end?: string } };
   brackets?: unknown[];
   autoClosingPairs?: unknown[];
 };
 if (
   languageConfiguration.comments?.lineComment !== "'" ||
   languageConfiguration.comments.blockComment?.join("") !== "/''/" ||
+  !languageConfiguration.folding?.markers?.start ||
+  !languageConfiguration.folding.markers.end ||
   !languageConfiguration.brackets?.length ||
   !languageConfiguration.autoClosingPairs?.length
 ) {
   throw new Error("PlantUML language configuration is incomplete.");
+}
+
+const foldingStart = new RegExp(languageConfiguration.folding.markers.start);
+const foldingEnd = new RegExp(languageConfiguration.folding.markers.end);
+
+for (const line of ["!if condition", "  !IF condition", "\t!If condition"]) {
+  if (!foldingStart.test(line)) {
+    throw new Error(`PlantUML folding start marker does not match: ${line}`);
+  }
+}
+for (const line of ["!endif", "  !ENDIF", "\t!EndIf"]) {
+  if (!foldingEnd.test(line)) {
+    throw new Error(`PlantUML folding end marker does not match: ${line}`);
+  }
+}
+for (const line of ["!else", "!elseif condition", "!ifdef FLAG", "!ifndef FLAG"]) {
+  if (foldingStart.test(line) || foldingEnd.test(line)) {
+    throw new Error(`PlantUML folding marker unexpectedly matches: ${line}`);
+  }
+}
+
+const nestedFoldingLines = [
+  "!if outer",
+  "  !if inner",
+  "  !endif",
+  "!endif",
+];
+const foldingStack: number[] = [];
+const foldingRanges: Array<[number, number]> = [];
+for (const [lineNumber, line] of nestedFoldingLines.entries()) {
+  if (foldingStart.test(line)) foldingStack.push(lineNumber);
+  if (foldingEnd.test(line)) {
+    const start = foldingStack.pop();
+    if (start !== undefined) foldingRanges.push([start, lineNumber]);
+  }
+}
+if (
+  foldingStack.length !== 0 ||
+  JSON.stringify(foldingRanges) !== JSON.stringify([[1, 2], [0, 3]])
+) {
+  throw new Error("PlantUML folding markers do not preserve nested ranges.");
 }
 
 if (

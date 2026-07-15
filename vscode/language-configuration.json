@@ -3,6 +3,12 @@
 		"lineComment": "'",
 		"blockComment": ["/'", "'/"]
 	},
+	"folding": {
+		"markers": {
+			"start": "^\\s*![iI][fF]\\b",
+			"end": "^\\s*![eE][nN][dD][iI][fF]\\b"
+		}
+	},
 	"brackets": [
 		["{", "}"],
 		["[", "]"],
