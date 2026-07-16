@@ -121,7 +121,7 @@ describe("LiveToggleCard", () => {
     expect(onWrap).toHaveBeenCalledWith(
       expect.objectContaining({
         source:
-          "@startuml\n!$_live_DETAILS = %false()\n!if $_live_DETAILS\nclass User\n!endif // _live_DETAILS\n@enduml",
+          "@startuml\n!$_live_DETAILS = %false()\n!if $_live_DETAILS\nclass User\n!endif /' _live_DETAILS '/\n@enduml",
       }),
     );
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();

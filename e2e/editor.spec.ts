@@ -184,7 +184,7 @@ test("wraps selected source lines with a live flag", async ({ page }) => {
   await page.getByRole("menuitem", { name: "DETAILS Off" }).click();
   await expect(page.locator(".cm-content")).toBeFocused();
   await expect(page.locator(".cm-content")).toContainText("!if $_live_DETAILS");
-  await expect(page.locator(".cm-content")).toContainText("!endif // _live_DETAILS");
+  await expect(page.locator(".cm-content")).toContainText("!endif /' _live_DETAILS '/");
   await expect(page.locator(".diagram-content svg")).not.toContainText("Details", {
     timeout: 30_000,
   });

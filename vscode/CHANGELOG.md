@@ -2,8 +2,8 @@
 
 ## 0.3.1
 
-- Added the live variable name as a comment after `!endif` when wrapping a
-  selection with a live flag.
+- Added the live variable name as a PlantUML block comment after `!endif` when
+  wrapping a selection with a live flag.
 
 ## 0.3.0
 

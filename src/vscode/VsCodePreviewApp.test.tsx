@@ -198,7 +198,7 @@ describe("VsCodePreviewApp", () => {
         "!$_live_DETAILS = %false()",
         "!if $_live_DETAILS",
         "class User",
-        "!endif // _live_DETAILS",
+        "!endif /' _live_DETAILS '/",
         "@enduml",
       ].join("\n"),
       expectedVersion: 7,
