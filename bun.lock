@@ -13,7 +13,7 @@
         "@codemirror/view": "6.38.1",
         "@icons-pack/react-simple-icons": "13.13.0",
         "@lezer/highlight": "1.2.1",
-        "@plantuml/core": "1.2026.6",
+        "@peterder72/plantuml-core": "1.2026.6-limit8192.1",
         "dompurify": "3.2.6",
         "lucide-react": "0.468.0",
         "react": "19.1.1",
@@ -245,7 +245,7 @@
 
     "@nodelib/fs.walk": ["@nodelib/fs.walk@1.2.8", "", { "dependencies": { "@nodelib/fs.scandir": "2.1.5", "fastq": "^1.6.0" } }, "sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg=="],
 
-    "@plantuml/core": ["@plantuml/core@1.2026.6", "", {}, "sha512-e+s8jtAKT6kb7yvOCXv0exXOp7FvyKYDcpv+aQrThwXUQgdTGP+fb9hPZQr7jbeEMuUHbxjH1HYLwNZZxw3hJg=="],
+    "@peterder72/plantuml-core": ["@peterder72/plantuml-core@1.2026.6-limit8192.1", "", {}, "sha512-wc6JfwbvMqGF3VE/+iFbFNzRYJermylkNMyXM5S05MnnuTOaOrljnsXmaGed1gVjk37Vu40CJvb6yiKsF0Bxiw=="],
 
     "@playwright/test": ["@playwright/test@1.54.2", "", { "dependencies": { "playwright": "1.54.2" }, "bin": { "playwright": "cli.js" } }, "sha512-A+znathYxPf+72riFd1r1ovOLqsIIB0jKIoPjyK2kqEIe30/6jF6BC7QNluHuwUmsD2tv1XZVugN8GqfTMOxsA=="],
 

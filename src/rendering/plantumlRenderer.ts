@@ -1,5 +1,5 @@
 import { sanitizeSvg } from "./svgSanitizer";
-import vizSource from "@plantuml/core/viz-global.js?raw";
+import vizSource from "@peterder72/plantuml-core/viz-global.js?raw";
 
 export type RenderResult =
   | { ok: true; svg: string; renderId: number; durationMs: number }
@@ -12,7 +12,7 @@ export interface PlantUmlRenderer {
 
 export const RENDER_TIMEOUT_MS = 30_000;
 
-type RenderToString = typeof import("@plantuml/core").renderToString;
+type RenderToString = typeof import("@peterder72/plantuml-core").renderToString;
 
 export function renderToSvg(
   renderToString: RenderToString,
@@ -70,7 +70,7 @@ class BrowserPlantUmlRenderer implements PlantUmlRenderer {
           script.textContent = vizSource;
           document.head.appendChild(script);
         }
-        const core = await import("@plantuml/core");
+        const core = await import("@peterder72/plantuml-core");
         this.renderToString = core.renderToString;
       })();
     }

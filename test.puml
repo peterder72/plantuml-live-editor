@@ -1,0 +1,19 @@
+@startuml
+!$_live_SOMETHING = %true()
+
+!if $_live_SOMETHING
+A -> B
+B -> C
+!endif
+
+/' @plantuml-live-editor views v2
+{
+  "activeView": "Default",
+  "views": {
+    "Default": {
+      "SOMETHING": true
+    }
+  }
+}
+@end-plantuml-live-editor views '/
+@enduml

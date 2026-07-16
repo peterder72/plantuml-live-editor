@@ -23,6 +23,7 @@ interface VsCodePreviewAppProps {
 export function VsCodePreviewApp({ api }: VsCodePreviewAppProps = {}) {
   const [vscode] = useState(() => api ?? acquireVsCodeApi());
   const [source, setSource] = useState("");
+  const [documentUri, setDocumentUri] = useState("");
   const [hasDocumentState, setHasDocumentState] = useState(false);
   const [version, setVersion] = useState(0);
   const [fileName, setFileName] = useState("PlantUML");
@@ -35,6 +36,7 @@ export function VsCodePreviewApp({ api }: VsCodePreviewAppProps = {}) {
     const receiveMessage = (event: MessageEvent<ExtensionToWebviewMessage>) => {
       const message = event.data;
       if (message.type === "documentState") {
+        setDocumentUri(message.documentUri);
         setSource(message.source);
         setHasDocumentState(true);
         setVersion(message.version);
@@ -62,12 +64,14 @@ export function VsCodePreviewApp({ api }: VsCodePreviewAppProps = {}) {
     }
     vscode.postMessage({
       type: "rendered",
+      documentUri,
       documentVersion: version,
       renderRevision,
       svgFingerprint: fingerprint(svg),
     });
   }, [
     acceptedRender,
+    documentUri,
     hasDocumentState,
     renderRevision,
     source,
@@ -84,6 +88,7 @@ export function VsCodePreviewApp({ api }: VsCodePreviewAppProps = {}) {
     setSource(nextSource);
     vscode.postMessage({
       type: "replaceSource",
+      documentUri,
       source: nextSource,
       expectedVersion: version,
       selectionAfter,

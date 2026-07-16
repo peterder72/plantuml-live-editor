@@ -105,12 +105,60 @@ async function run() {
   await vscode.commands.executeCommand(PREVIEW_COMMAND);
   assert.equal(extensionApi.getPreviewCount(), 1, "reopening reuses the preview panel");
 
+  const secondSourceUri = vscode.Uri.file(
+    path.join(os.tmpdir(), `plantuml-live-editor-second-${Date.now()}.puml`),
+  );
+  await vscode.workspace.fs.writeFile(
+    secondSourceUri,
+    new TextEncoder().encode("@startuml\nAlice -> Carol: Switched\n@enduml\n"),
+  );
+  const secondDocument = await vscode.workspace.openTextDocument(secondSourceUri);
+  await vscode.window.showTextDocument(secondDocument, {
+    viewColumn: editor.viewColumn,
+  });
+
+  await waitFor(() => {
+    const state = extensionApi.getPreviewState(secondSourceUri.toString());
+    return (
+      state?.ready &&
+      state.lastRendered?.documentVersion === secondDocument.version &&
+      state.lastRendered.svgFingerprint !== initialFingerprint
+    );
+  }, "the existing preview to follow the second document");
+  assert.equal(extensionApi.getPreviewCount(), 1, "document switches reuse one preview");
+  assert.equal(
+    extensionApi.getPreviewState(sourceUri.toString()),
+    undefined,
+    "the preview is no longer associated with the first document",
+  );
+
+  await vscode.commands.executeCommand("workbench.action.closeEditorsInOtherGroups");
+  await waitFor(
+    () => extensionApi.getPreviewCount() === 0,
+    "the followed preview panel to dispose",
+  );
+  assert.equal(
+    vscode.window.activeTextEditor?.document.uri.toString(),
+    secondSourceUri.toString(),
+  );
+
+  await vscode.commands.executeCommand(PREVIEW_COMMAND);
+  await waitFor(() => {
+    const state = extensionApi.getPreviewState(secondSourceUri.toString());
+    return (
+      extensionApi.getPreviewCount() === 1 &&
+      state?.ready &&
+      state.lastRendered?.documentVersion === secondDocument.version
+    );
+  }, "the second document preview to render after being reopened");
+
   await vscode.commands.executeCommand("workbench.action.closeAllEditors");
   await waitFor(
     () => extensionApi.getPreviewCount() === 0,
     "the preview panel to dispose",
   );
   await vscode.workspace.fs.delete(sourceUri);
+  await vscode.workspace.fs.delete(secondSourceUri);
   await vscode.workspace.fs.delete(unsupportedUri);
 
   for (const extension of PLANTUML_EXTENSIONS) {

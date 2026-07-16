@@ -83,7 +83,7 @@ toggles, pan, zoom, fit, reset, and export in an offline webview.
 
 ## Known Limitations
 
-- Browser-rendered diagrams are limited to 4096 × 4096 pixels.
+- Browser-rendered diagrams are limited to 8192 × 8192 pixels.
 - Sudoku is excluded from PlantUML's MIT browser package.
 - Remote `!include` files and network resources are intentionally unsupported.
 - A restrictive Content Security Policy, startup network lockdown, source

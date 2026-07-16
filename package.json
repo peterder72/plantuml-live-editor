@@ -1,6 +1,6 @@
 {
   "name": "plantuml-live-editor",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -25,7 +25,7 @@
     "@codemirror/view": "6.38.1",
     "@icons-pack/react-simple-icons": "13.13.0",
     "@lezer/highlight": "1.2.1",
-    "@plantuml/core": "1.2026.6",
+    "@peterder72/plantuml-core": "1.2026.6-limit8192.1",
     "dompurify": "3.2.6",
     "lucide-react": "0.468.0",
     "react": "19.1.1",

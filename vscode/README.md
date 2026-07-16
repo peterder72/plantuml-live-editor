@@ -46,7 +46,7 @@ rejected. The extension does not collect telemetry.
 
 ## Known Limitations
 
-- Browser-rendered diagrams are limited to 4096 × 4096 pixels.
+- Browser-rendered diagrams are limited to 8192 × 8192 pixels.
 - Sudoku is not included in PlantUML's MIT browser engine.
 - Remote `!include` files and network resources are intentionally unsupported.
 - The initial render can take a moment while the embedded engine initializes.

@@ -2,6 +2,7 @@ import type { SourceSelection } from "../liveToggles/liveToggleWrap";
 
 export interface DocumentStateMessage {
   type: "documentState";
+  documentUri: string;
   source: string;
   version: number;
   fileName: string;
@@ -14,6 +15,7 @@ export interface ReadyMessage {
 
 export interface ReplaceSourceMessage {
   type: "replaceSource";
+  documentUri: string;
   source: string;
   expectedVersion: number;
   selectionAfter?: SourceSelection;
@@ -21,6 +23,7 @@ export interface ReplaceSourceMessage {
 
 export interface RenderedMessage {
   type: "rendered";
+  documentUri: string;
   documentVersion: number;
   renderRevision: number;
   svgFingerprint: string;

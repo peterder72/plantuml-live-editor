@@ -155,4 +155,31 @@ describe("useDiagramRenderer", () => {
     expect(result.current.svg).toContain("recovered");
     expect(result.current.status.kind).toBe("success");
   });
+
+  it("reports an unexpected renderer exception and recovers on the next source", async () => {
+    vi.useFakeTimers();
+    const renderSpy = vi
+      .spyOn(plantUmlRenderer, "render")
+      .mockImplementationOnce(() => {
+        throw new TypeError("Cannot read properties of undefined");
+      })
+      .mockResolvedValueOnce(success(2, "recovered"));
+    const { result, rerender } = renderHook(
+      ({ source }) => useDiagramRenderer(source),
+      { initialProps: { source: FIRST_SOURCE as string | null } },
+    );
+
+    await flushTimers();
+    expect(result.current.status).toEqual({
+      kind: "error",
+      label: "Cannot read properties of undefined",
+    });
+
+    rerender({ source: SECOND_SOURCE });
+    await act(async () => vi.advanceTimersByTimeAsync(300));
+
+    expect(renderSpy).toHaveBeenCalledTimes(2);
+    expect(result.current.svg).toContain("recovered");
+    expect(result.current.status.kind).toBe("success");
+  });
 });

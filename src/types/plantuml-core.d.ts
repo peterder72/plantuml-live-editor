@@ -1,4 +1,4 @@
-declare module "@plantuml/core" {
+declare module "@peterder72/plantuml-core" {
   export function renderToString(
     lines: string[],
     onSuccess: (svg: string) => void,
@@ -7,9 +7,9 @@ declare module "@plantuml/core" {
   ): void;
 }
 
-declare module "@plantuml/core/viz-global.js";
+declare module "@peterder72/plantuml-core/viz-global.js";
 
-declare module "@plantuml/core/viz-global.js?raw" {
+declare module "@peterder72/plantuml-core/viz-global.js?raw" {
   const source: string;
   export default source;
 }

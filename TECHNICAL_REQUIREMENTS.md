@@ -3,7 +3,7 @@
 ## Runtime And Packaging
 
 - React, TypeScript, Vite, and Bun.
-- Pin `@plantuml/core` to `1.2026.6`.
+- Pin `@peterder72/plantuml-core` to `1.2026.6-limit8192.1`.
 - Produce a single `dist/index.html` with no runtime file or network dependency.
 - Support current desktop Chrome, Edge, and Firefox.
 - The built file must run from `file://`.
@@ -36,7 +36,7 @@
 
 ## Performance Targets
 
-- Keep editing responsive for representative diagrams under the 4096-pixel
+- Keep editing responsive for representative diagrams under the 8192-pixel
   engine limit.
 - Display render duration after each successful render.
 - Retain only the latest pending user intent.

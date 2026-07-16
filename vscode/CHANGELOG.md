@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0
+
+- Reused a single preview panel that follows the active PlantUML document.
+- Increased the browser-rendering limit from 4096 × 4096 to 8192 × 8192 pixels.
+- Improved recovery from unexpected renderer errors while preserving the last
+  valid diagram.
+
 ## 0.2.1
 
 - Added "if" statement preprocessor collapsing in the editor

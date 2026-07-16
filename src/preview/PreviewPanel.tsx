@@ -78,7 +78,7 @@ export function PreviewPanel({
       </div>
       <PanelFooter
         start={showStatusInFooter ? status.label : "Client-side renderer"}
-        end="Max 4096 × 4096"
+        end="Max 8192 × 8192"
       />
     </section>
   );

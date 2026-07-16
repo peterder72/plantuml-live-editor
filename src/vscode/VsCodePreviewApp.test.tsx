@@ -4,6 +4,8 @@ import { plantUmlRenderer } from "../rendering/plantumlRenderer";
 import { VsCodePreviewApp, type VsCodeApi } from "./VsCodePreviewApp";
 import type { ExtensionToWebviewMessage } from "./messages";
 
+const DOCUMENT_URI = "file:///workspace/example.puml";
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -44,6 +46,7 @@ describe("VsCodePreviewApp", () => {
     const source = "@startuml\nAlice -> Bob\n@enduml";
     send({
       type: "documentState",
+      documentUri: DOCUMENT_URI,
       source,
       version: 1,
       fileName: "example.puml",
@@ -57,6 +60,7 @@ describe("VsCodePreviewApp", () => {
     const updated = "@startuml\nBob -> Carol\n@enduml";
     send({
       type: "documentState",
+      documentUri: DOCUMENT_URI,
       source: updated,
       version: 2,
       fileName: "example.puml",
@@ -95,6 +99,7 @@ describe("VsCodePreviewApp", () => {
 
     send({
       type: "documentState",
+      documentUri: DOCUMENT_URI,
       source: "@startuml\nAlice -> Bob\n@enduml",
       version: 1,
       fileName: "example.puml",
@@ -104,6 +109,7 @@ describe("VsCodePreviewApp", () => {
 
     send({
       type: "documentState",
+      documentUri: DOCUMENT_URI,
       source: "@startuml\nbroken",
       version: 2,
       fileName: "example.puml",
@@ -117,6 +123,7 @@ describe("VsCodePreviewApp", () => {
 
     send({
       type: "documentState",
+      documentUri: DOCUMENT_URI,
       source: "@startuml\nAlice -> Carol\n@enduml",
       version: 3,
       fileName: "example.puml",
@@ -140,6 +147,7 @@ describe("VsCodePreviewApp", () => {
     for (const [index, participant] of ["Bob", "Carol", "Dave"].entries()) {
       send({
         type: "documentState",
+        documentUri: DOCUMENT_URI,
         source: `@startuml\nAlice -> ${participant}\n@enduml`,
         version: index + 1,
         fileName: "example.puml",
@@ -172,6 +180,7 @@ describe("VsCodePreviewApp", () => {
 
     send({
       type: "documentState",
+      documentUri: DOCUMENT_URI,
       source,
       version: 7,
       fileName: "example.puml",
@@ -183,6 +192,7 @@ describe("VsCodePreviewApp", () => {
 
     expect(postMessage).toHaveBeenLastCalledWith({
       type: "replaceSource",
+      documentUri: DOCUMENT_URI,
       source: [
         "@startuml",
         "!$_live_DETAILS = %false()",
@@ -202,6 +212,7 @@ describe("VsCodePreviewApp", () => {
 
     send({
       type: "documentState",
+      documentUri: DOCUMENT_URI,
       source: "@startuml\n!$_live_DETAILS = %false()\n@enduml",
       version: 3,
       fileName: "flags.puml",
@@ -230,6 +241,7 @@ describe("VsCodePreviewApp", () => {
 
     send({
       type: "documentState",
+      documentUri: DOCUMENT_URI,
       source: "@startuml\n!$_live_DETAILS = %true()\n@enduml",
       version: 4,
       fileName: "flags.puml",
@@ -241,5 +253,48 @@ describe("VsCodePreviewApp", () => {
   it("shows renderer status in the preview footer", () => {
     render(<VsCodePreviewApp api={{ postMessage: vi.fn() }} />);
     expect(screen.getByText("Loading engine")).toBeInTheDocument();
+  });
+
+  it("rebinds an existing render to a different document with identical source", async () => {
+    vi.useFakeTimers();
+    const postMessage = vi.fn<VsCodeApi["postMessage"]>();
+    const source = "@startuml\nAlice -> Bob\n@enduml";
+    const renderSpy = vi.spyOn(plantUmlRenderer, "render").mockResolvedValue({
+      ok: true,
+      svg: '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10"><text>Shared</text></svg>',
+      renderId: 1,
+      durationMs: 1,
+    });
+    render(<VsCodePreviewApp api={{ postMessage }} />);
+
+    send({
+      type: "documentState",
+      documentUri: "file:///workspace/first.puml",
+      source,
+      version: 1,
+      fileName: "first.puml",
+      selection: { from: 0, to: 0 },
+    });
+    await act(async () => vi.runAllTimersAsync());
+
+    send({
+      type: "documentState",
+      documentUri: "file:///workspace/second.puml",
+      source,
+      version: 1,
+      fileName: "second.puml",
+      selection: { from: 0, to: 0 },
+    });
+    await act(async () => {});
+
+    expect(renderSpy).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("second.puml")).toBeInTheDocument();
+    expect(postMessage).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        type: "rendered",
+        documentUri: "file:///workspace/second.puml",
+        documentVersion: 1,
+      }),
+    );
   });
 });

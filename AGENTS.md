@@ -40,6 +40,6 @@ bun run test:e2e
 
 ## Constraints
 
-- PlantUML browser output is currently limited to 4096 pixels per dimension.
+- PlantUML browser output is currently limited to 8192 pixels per dimension.
 - The MIT browser engine does not include Sudoku diagrams.
 - Remote includes and resources are unsupported in the offline MVP.

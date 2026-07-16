@@ -25,7 +25,7 @@ class PreviewPanel {
 
   constructor(
     private readonly context: vscode.ExtensionContext,
-    private readonly document: vscode.TextDocument,
+    private document: vscode.TextDocument,
     private readonly panel: vscode.WebviewPanel,
     private readonly onDispose: () => void,
   ) {
@@ -42,12 +42,17 @@ class PreviewPanel {
         this.handleMessage(message),
       ),
       vscode.workspace.onDidChangeTextDocument((event) => {
-        if (event.document.uri.toString() === document.uri.toString()) {
+        if (
+          event.document.uri.toString() === this.document.uri.toString()
+        ) {
           void this.postDocumentState();
         }
       }),
       vscode.window.onDidChangeTextEditorSelection((event) => {
-        if (event.textEditor.document.uri.toString() === document.uri.toString()) {
+        if (
+          event.textEditor.document.uri.toString() ===
+          this.document.uri.toString()
+        ) {
           void this.postDocumentState();
         }
       }),
@@ -60,9 +65,20 @@ class PreviewPanel {
     this.panel.reveal(column);
   }
 
+  followDocument(document: vscode.TextDocument) {
+    if (this.disposed) return;
+    const nextUri = document.uri.toString();
+    if (nextUri === this.document.uri.toString()) return;
+    this.document = document;
+    this.lastRendered = undefined;
+    this.panel.title = getPreviewTitle(document);
+    void this.postDocumentState();
+  }
+
   getState() {
     return {
       ready: this.ready,
+      documentUri: this.document.uri.toString(),
       lastDocumentVersionSent: this.lastDocumentVersionSent,
       lastSelectionSent: this.lastSelectionSent,
       lastRendered: this.lastRendered,
@@ -77,6 +93,7 @@ class PreviewPanel {
     }
 
     if (message.type === "rendered") {
+      if (message.documentUri !== this.document.uri.toString()) return;
       this.lastRendered = {
         documentVersion: message.documentVersion,
         renderRevision: message.renderRevision,
@@ -86,7 +103,10 @@ class PreviewPanel {
     }
 
     if (message.type !== "replaceSource") return;
-    if (this.document.version !== message.expectedVersion) {
+    if (
+      message.documentUri !== this.document.uri.toString() ||
+      this.document.version !== message.expectedVersion
+    ) {
       await this.postMessage({
         type: "showError",
         message: "The document changed before the toggle edit was applied.",
@@ -139,6 +159,7 @@ class PreviewPanel {
     this.lastSelectionSent = this.getDocumentSelection();
     return this.postMessage({
       type: "documentState",
+      documentUri: this.document.uri.toString(),
       source: this.document.getText(),
       version: this.document.version,
       fileName: this.document.fileName.split(/[\\/]/).pop() ?? "PlantUML",
@@ -207,7 +228,7 @@ class PreviewPanel {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  const previews = new Map<string, PreviewPanel>();
+  let preview: PreviewPanel | undefined;
   const openPreview = () => {
     const editor = vscode.window.activeTextEditor;
     if (!editor || !isPlantUmlDocument(editor.document)) {
@@ -217,33 +238,43 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
 
-    const key = editor.document.uri.toString();
-    const existing = previews.get(key);
-    if (existing) {
-      existing.reveal(vscode.ViewColumn.Beside);
+    if (preview) {
+      preview.followDocument(editor.document);
+      preview.reveal(vscode.ViewColumn.Beside);
       return;
     }
 
     const panel = vscode.window.createWebviewPanel(
       VIEW_TYPE,
-      `Preview ${editor.document.fileName.split(/[\\/]/).pop()}`,
+      getPreviewTitle(editor.document),
       { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true },
       { retainContextWhenHidden: true },
     );
-    const preview = new PreviewPanel(context, editor.document, panel, () =>
-      previews.delete(key),
-    );
-    previews.set(key, preview);
+    preview = new PreviewPanel(context, editor.document, panel, () => {
+      preview = undefined;
+    });
   };
 
   context.subscriptions.push(
     vscode.commands.registerCommand(PREVIEW_COMMAND, openPreview),
+    vscode.window.onDidChangeActiveTextEditor((editor) => {
+      if (preview && editor && isPlantUmlDocument(editor.document)) {
+        preview.followDocument(editor.document);
+      }
+    }),
   );
 
   return {
-    getPreviewCount: () => previews.size,
-    getPreviewState: (uri: string) => previews.get(uri)?.getState(),
+    getPreviewCount: () => (preview ? 1 : 0),
+    getPreviewState: (uri: string) => {
+      const state = preview?.getState();
+      return state?.documentUri === uri ? state : undefined;
+    },
   };
+}
+
+function getPreviewTitle(document: vscode.TextDocument) {
+  return `Preview ${document.fileName.split(/[\\/]/).pop() ?? "PlantUML"}`;
 }
 
 function isPlantUmlDocument(document: vscode.TextDocument) {

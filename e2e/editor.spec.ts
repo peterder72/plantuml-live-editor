@@ -73,6 +73,49 @@ test("renders offline and preserves zoom while editing", async ({ page }) => {
   await expect(transform).toHaveAttribute("style", before ?? "");
 });
 
+test("renders beyond 4096 and preserves it when the 8192 limit is exceeded", async ({
+  page,
+}) => {
+  await page.goto(artifactUrl);
+  await expect(page.locator(".diagram-content svg")).toBeVisible({
+    timeout: 30_000,
+  });
+  await expect(page.getByText("Max 8192 × 8192", { exact: true })).toBeVisible();
+
+  const editor = page.locator(".cm-content");
+  const withinLimit = [
+    "@startuml",
+    "left to right direction",
+    "skinparam ranksep 5000",
+    "class A",
+    "class B",
+    "A -- B",
+    "@enduml",
+  ].join("\n");
+  await editor.click();
+  await page.keyboard.press("ControlOrMeta+A");
+  await page.keyboard.insertText(withinLimit);
+
+  const svg = page.locator(".diagram-content svg");
+  await expect(page.getByText(/Rendered in/)).toBeVisible({ timeout: 30_000 });
+  await expect
+    .poll(async () => Number(await svg.getAttribute("width")))
+    .toBeGreaterThan(4096);
+  const validWidth = await svg.getAttribute("width");
+
+  const overLimit = withinLimit.replace("ranksep 5000", "ranksep 8200");
+  await editor.click();
+  await page.keyboard.press("ControlOrMeta+A");
+  await page.keyboard.insertText(overLimit);
+
+  await expect(
+    page.getByText(
+      /Diagram too large for browser rendering: \d+x\d+ \(max 8192\)/,
+    ).first(),
+  ).toBeVisible({ timeout: 30_000 });
+  await expect(svg).toHaveAttribute("width", validWidth ?? "");
+});
+
 test("rewrites live boolean toggles and rerenders offline", async ({ page }) => {
   await page.goto(artifactUrl);
   await expect(page.locator(".diagram-content svg")).toBeVisible({

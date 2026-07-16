@@ -64,9 +64,24 @@ export function useDiagramRenderer(source: string | null) {
   const runRequest = useCallback(
     (request: RenderRequest) => {
       renderingRef.current = true;
-      void plantUmlRenderer
-        .render(request.source, request.renderId)
-        .then((result) => acceptResult(result, request.source))
+      void Promise.resolve()
+        .then(() => plantUmlRenderer.render(request.source, request.renderId))
+        .then(
+          (result) => acceptResult(result, request.source),
+          (error: unknown) =>
+            acceptResult(
+              {
+                ok: false,
+                error:
+                  error instanceof Error
+                    ? error.message
+                    : "Unable to render this diagram.",
+                renderId: request.renderId,
+                durationMs: 0,
+              },
+              request.source,
+            ),
+        )
         .finally(() => {
           renderingRef.current = false;
           const pending = pendingRef.current;
