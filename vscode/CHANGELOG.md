@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1
+
+- Added the live variable name as a comment after `!endif` when wrapping a
+  selection with a live flag.
+
 ## 0.3.0
 
 - Reused a single preview panel that follows the active PlantUML document.

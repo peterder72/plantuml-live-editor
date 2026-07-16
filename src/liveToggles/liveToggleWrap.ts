@@ -27,7 +27,7 @@ export function wrapSelectionWithLiveToggle(
   const indent = /^[ \t]*/.exec(selectedLines)?.[0] ?? "";
   const lineEnding = source.includes("\r\n") ? "\r\n" : "\n";
   const opening = `${indent}!if $${flagName}${lineEnding}`;
-  const closing = `${lineEnding}${indent}!endif`;
+  const closing = `${lineEnding}${indent}!endif // ${flagName}`;
   const wrapped = `${source.slice(0, lineStart)}${opening}${selectedLines}${closing}${source.slice(lineEnd)}`;
   const contentStart = lineStart + opening.length;
 
