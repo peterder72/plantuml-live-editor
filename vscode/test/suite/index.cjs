@@ -110,7 +110,9 @@ async function run() {
   );
   await vscode.workspace.fs.writeFile(
     secondSourceUri,
-    new TextEncoder().encode("@startuml\nAlice -> Carol: Switched\n@enduml\n"),
+    new TextEncoder().encode(
+      "@startuml\nclass Customer\nclass Order\nCustomer -- Order\n@enduml\n",
+    ),
   );
   const secondDocument = await vscode.workspace.openTextDocument(secondSourceUri);
   await vscode.window.showTextDocument(secondDocument, {

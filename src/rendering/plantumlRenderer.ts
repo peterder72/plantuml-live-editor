@@ -14,6 +14,17 @@ export const RENDER_TIMEOUT_MS = 30_000;
 
 type RenderToString = typeof import("@peterder72/plantuml-core").renderToString;
 
+export function createEmbeddedVizScript(source = vizSource): HTMLScriptElement {
+  const script = document.createElement("script");
+  script.dataset.plantumlViz = "embedded";
+  script.textContent = source;
+
+  const nonce = document.querySelector<HTMLScriptElement>("script[nonce]")?.nonce;
+  if (nonce) script.nonce = nonce;
+
+  return script;
+}
+
 export function renderToSvg(
   renderToString: RenderToString,
   source: string,
@@ -65,10 +76,12 @@ class BrowserPlantUmlRenderer implements PlantUmlRenderer {
     if (!this.initializePromise) {
       this.initializePromise = (async () => {
         if (!("Viz" in window)) {
-          const script = document.createElement("script");
-          script.dataset.plantumlViz = "embedded";
-          script.textContent = vizSource;
-          document.head.appendChild(script);
+          document.head.appendChild(createEmbeddedVizScript());
+        }
+        if (!("Viz" in window)) {
+          throw new Error(
+            "The embedded Graphviz engine could not initialize. Its Viz script may have been blocked by the page security policy.",
+          );
         }
         const core = await import("@peterder72/plantuml-core");
         this.renderToString = core.renderToString;
@@ -103,6 +116,7 @@ class BrowserPlantUmlRenderer implements PlantUmlRenderer {
           durationMs: performance.now() - startedAt,
         };
       } catch (error) {
+        console.error("PlantUML rendering failed.", error);
         return {
           ok: false as const,
           error: normalizeError(error),

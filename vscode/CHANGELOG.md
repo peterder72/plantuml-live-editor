@@ -3,6 +3,8 @@
 ## 0.3.0
 
 - Reused a single preview panel that follows the active PlantUML document.
+- Fixed Graphviz-based diagrams failing in VS Code after switching documents
+  because the embedded Viz.js script was blocked by the webview security policy.
 - Increased the browser-rendering limit from 4096 × 4096 to 8192 × 8192 pixels.
 - Improved recovery from unexpected renderer errors while preserving the last
   valid diagram.

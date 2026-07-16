@@ -1,12 +1,32 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   assertOfflineSource,
+  createEmbeddedVizScript,
   getPlantUmlDiagnostic,
   renderToSvg,
 } from "./plantumlRenderer";
 
 afterEach(() => {
   vi.useRealTimers();
+  document.head.replaceChildren();
+});
+
+describe("createEmbeddedVizScript", () => {
+  it("inherits the nonce from the VS Code webview entry script", () => {
+    const entryScript = document.createElement("script");
+    entryScript.nonce = "webview-nonce";
+    document.head.appendChild(entryScript);
+
+    const vizScript = createEmbeddedVizScript("globalThis.Viz = {};");
+
+    expect(vizScript.nonce).toBe("webview-nonce");
+    expect(vizScript.dataset.plantumlViz).toBe("embedded");
+    expect(vizScript.textContent).toBe("globalThis.Viz = {};");
+  });
+
+  it("does not add a nonce in the standalone web app", () => {
+    expect(createEmbeddedVizScript("globalThis.Viz = {};").nonce).toBe("");
+  });
 });
 
 describe("renderToSvg", () => {
