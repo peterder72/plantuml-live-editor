@@ -77,9 +77,12 @@ function inspect(): ScenarioCommandResult {
 
 async function panAndZoom() {
   const transform = required<HTMLElement>("[data-testid='diagram-transform']");
-  const beforeZoom = transform.getAttribute("style");
+  const beforeZoom = transform.dataset.scale;
   button("Zoom in").click();
-  await waitFor(() => transform.getAttribute("style") !== beforeZoom, "zoom transform");
+  await waitFor(
+    () => transform.dataset.scale !== beforeZoom,
+    "zoom scale to change",
+  );
 
   const viewport = required<HTMLElement>("[data-testid='diagram-viewport']");
   const beforePan = transform.getAttribute("style");
@@ -101,7 +104,14 @@ async function fitAndReset() {
   button("Fit diagram").click();
   await waitFor(() => transform.getAttribute("style") !== beforeFit, "fit transform");
   button("Reset view").click();
-  await waitFor(() => transform.dataset.scale === "1", "reset transform");
+  await waitFor(
+    () =>
+      transform.dataset.scale === "1" &&
+      /translate\(0px(?:, 0px)?\) scale\(1\)/.test(
+        transform.getAttribute("style") ?? "",
+      ),
+    "reset transform",
+  );
 }
 
 function toggleLiveFlag(name: string, enabled: boolean) {
@@ -243,7 +253,17 @@ function pointer(type: string, clientX: number, clientY: number) {
 }
 
 function nextFrame() {
-  return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  return new Promise<void>((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(fallback);
+      resolve();
+    };
+    const fallback = window.setTimeout(finish, 100);
+    requestAnimationFrame(finish);
+  });
 }
 
 async function waitFor(predicate: () => boolean, description: string) {

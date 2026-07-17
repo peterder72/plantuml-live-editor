@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import * as vscode from "vscode";
@@ -14,6 +15,8 @@ import type {
 const extensionId = "peterder72.plantuml-live-editor";
 const previewCommand = "plantumlLive.openPreview";
 const renderTimeout = 30_000;
+const isolatedWorkspace = process.env.PLANTUML_TEST_WORKSPACE;
+const temporaryRoot = isolatedWorkspace ?? os.tmpdir();
 
 interface PreviewState {
   ready: boolean;
@@ -37,6 +40,7 @@ interface ExtensionTestApi {
   getPreviewCount(): number;
   getPreviewState(uri: string): PreviewState | undefined;
   runPreviewScenario(command: ScenarioCommand): Promise<ScenarioCommandResult>;
+  disposePreview(): void;
 }
 
 export class VsCodeScenarioDriver implements ScenarioDriver {
@@ -55,7 +59,7 @@ export class VsCodeScenarioDriver implements ScenarioDriver {
     this.extensionApi = (await extension.activate()) as ExtensionTestApi;
 
     this.sourceUri = vscode.Uri.file(
-      path.join(os.tmpdir(), `plantuml-user-scenario-${Date.now()}.puml`),
+      path.join(temporaryRoot, `plantuml-user-scenario-${randomUUID()}.puml`),
     );
     this.temporaryUris.push(this.sourceUri);
     await vscode.workspace.fs.writeFile(
@@ -288,7 +292,7 @@ export class VsCodeScenarioDriver implements ScenarioDriver {
 
   async openAnotherDocument(source: string) {
     const uri = vscode.Uri.file(
-      path.join(os.tmpdir(), `plantuml-user-scenario-follow-${Date.now()}.puml`),
+      path.join(temporaryRoot, `plantuml-user-scenario-follow-${randomUUID()}.puml`),
     );
     this.temporaryUris.push(uri);
     await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(source));
@@ -306,25 +310,38 @@ export class VsCodeScenarioDriver implements ScenarioDriver {
   }
 
   async dispose() {
-    if (this.document || this.extensionApi?.getPreviewCount()) {
-      await vscode.commands.executeCommand("workbench.action.closeAllEditors");
-      if (this.extensionApi) {
-        await waitFor(
-          () => this.extensionApi?.getPreviewCount() === 0,
-          "the VS Code preview to dispose",
-        );
-      }
+    if (this.extensionApi?.getPreviewCount()) {
+      this.extensionApi.disposePreview();
+      await waitFor(
+        () => this.extensionApi?.getPreviewCount() === 0,
+        "the VS Code preview to dispose",
+      );
     }
 
-    for (const uri of this.temporaryUris.splice(0)) {
-      try {
-        await vscode.workspace.fs.delete(uri);
-      } catch (error) {
-        if (
-          !(error instanceof vscode.FileSystemError) ||
-          error.code !== "FileNotFound"
-        ) {
-          throw error;
+    if (this.document) {
+      await Promise.all(
+        this.temporaryUris.map(async (uri) => {
+          const document = vscode.workspace.textDocuments.find(
+            (candidate) => candidate.uri.toString() === uri.toString(),
+          );
+          if (document?.isDirty) await document.save();
+        }),
+      );
+      await vscode.commands.executeCommand("workbench.action.closeAllEditors");
+    }
+
+    const temporaryUris = this.temporaryUris.splice(0);
+    if (!isolatedWorkspace) {
+      for (const uri of temporaryUris) {
+        try {
+          await vscode.workspace.fs.delete(uri);
+        } catch (error) {
+          if (
+            !(error instanceof vscode.FileSystemError) ||
+            error.code !== "FileNotFound"
+          ) {
+            throw error;
+          }
         }
       }
     }

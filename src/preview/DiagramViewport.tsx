@@ -2,6 +2,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -71,12 +72,12 @@ export function DiagramViewport({
     );
   }, [readDiagramSize, setTransform]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const size = readDiagramSize();
     if (size) setDiagramSize(size);
     if (svg && !hasFitInitialRef.current) {
       hasFitInitialRef.current = true;
-      requestAnimationFrame(fit);
+      fit();
     }
   }, [fit, readDiagramSize, renderRevision, svg]);
 

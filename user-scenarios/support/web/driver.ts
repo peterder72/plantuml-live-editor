@@ -141,11 +141,10 @@ export class WebScenarioDriver implements ScenarioDriver {
     const viewport = page.getByTestId("diagram-viewport");
     const box = await viewport.boundingBox();
     if (!box) throw new Error("Preview viewport is not visible.");
-    await page.waitForTimeout(100);
     const transform = page.getByTestId("diagram-transform");
-    const initial = await transform.getAttribute("style");
+    const initialScale = await transform.getAttribute("data-scale");
     await page.getByRole("button", { name: "Zoom in" }).click();
-    await expect.poll(() => transform.getAttribute("style")).not.toBe(initial);
+    await expect.poll(() => transform.getAttribute("data-scale")).not.toBe(initialScale);
     const zoomed = await transform.getAttribute("style");
     const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
     await page.mouse.move(center.x, center.y);

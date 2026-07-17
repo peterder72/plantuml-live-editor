@@ -1,13 +1,21 @@
 const assert = require("node:assert/strict");
+const { randomUUID } = require("node:crypto");
 const os = require("node:os");
 const path = require("node:path");
 const vscode = require("vscode");
 
 const PREVIEW_COMMAND = "plantumlLive.openPreview";
 const PLANTUML_EXTENSIONS = ["puml", "plantuml", "pu", "iuml", "wsd"];
+const WAIT_TIMEOUT = 30_000;
+const ISOLATED_WORKSPACE = process.env.PLANTUML_TEST_WORKSPACE;
+const TEMPORARY_ROOT = ISOLATED_WORKSPACE || os.tmpdir();
+
+async function deleteTemporaryFile(uri) {
+  if (!ISOLATED_WORKSPACE) await vscode.workspace.fs.delete(uri);
+}
 
 async function waitFor(predicate, description) {
-  const deadline = Date.now() + 10_000;
+  const deadline = Date.now() + WAIT_TIMEOUT;
   while (Date.now() < deadline) {
     if (predicate()) return;
     await new Promise((resolve) => setTimeout(resolve, 50));
@@ -17,7 +25,7 @@ async function waitFor(predicate, description) {
 
 async function run() {
   const unsupportedUri = vscode.Uri.file(
-    path.join(os.tmpdir(), `plantuml-live-editor-${Date.now()}.txt`),
+    path.join(TEMPORARY_ROOT, `plantuml-live-editor-${randomUUID()}.txt`),
   );
   await vscode.workspace.fs.writeFile(
     unsupportedUri,
@@ -43,7 +51,7 @@ async function run() {
   );
 
   const sourceUri = vscode.Uri.file(
-    path.join(os.tmpdir(), `plantuml-live-editor-${Date.now()}.puml`),
+    path.join(TEMPORARY_ROOT, `plantuml-live-editor-${randomUUID()}.puml`),
   );
   await vscode.workspace.fs.writeFile(
     sourceUri,
@@ -90,7 +98,7 @@ async function run() {
   assert.equal(extensionApi.getPreviewCount(), 1, "reopening reuses the preview panel");
 
   const secondSourceUri = vscode.Uri.file(
-    path.join(os.tmpdir(), `plantuml-live-editor-second-${Date.now()}.puml`),
+    path.join(TEMPORARY_ROOT, `plantuml-live-editor-second-${randomUUID()}.puml`),
   );
   await vscode.workspace.fs.writeFile(
     secondSourceUri,
@@ -143,15 +151,15 @@ async function run() {
     () => extensionApi.getPreviewCount() === 0,
     "the preview panel to dispose",
   );
-  await vscode.workspace.fs.delete(sourceUri);
-  await vscode.workspace.fs.delete(secondSourceUri);
-  await vscode.workspace.fs.delete(unsupportedUri);
+  await deleteTemporaryFile(sourceUri);
+  await deleteTemporaryFile(secondSourceUri);
+  await deleteTemporaryFile(unsupportedUri);
 
   for (const extension of PLANTUML_EXTENSIONS) {
     const languageUri = vscode.Uri.file(
       path.join(
-        os.tmpdir(),
-        `plantuml-language-${Date.now()}-${extension}.${extension}`,
+        TEMPORARY_ROOT,
+        `plantuml-language-${randomUUID()}.${extension}`,
       ),
     );
     await vscode.workspace.fs.writeFile(
@@ -164,7 +172,7 @@ async function run() {
       "plantuml",
       `.${extension} is recognized as PlantUML`,
     );
-    await vscode.workspace.fs.delete(languageUri);
+    await deleteTemporaryFile(languageUri);
   }
 }
 

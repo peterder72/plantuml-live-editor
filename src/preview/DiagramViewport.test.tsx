@@ -1,12 +1,16 @@
-import { act, fireEvent, render } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { DiagramViewport } from "./DiagramViewport";
 
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100" viewBox="0 0 200 100"><rect width="200" height="100"/></svg>`;
 
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
+
 describe("DiagramViewport", () => {
   it("preserves the transform when SVG content changes", () => {
-    vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 0);
     const { getByTestId, rerender, container } = render(
       <DiagramViewport svg={svg} renderRevision={1} />,
     );
@@ -51,6 +55,36 @@ describe("DiagramViewport", () => {
     );
 
     expect(getByTestId("diagram-transform").getAttribute("style")).toBe(before);
+  });
+
+  it("finishes the initial fit before accepting viewport interaction", () => {
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 800,
+      height: 600,
+      right: 800,
+      bottom: 600,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    const requestFrame = vi.spyOn(window, "requestAnimationFrame");
+    const { getByRole, getByTestId } = render(
+      <DiagramViewport svg={svg} renderRevision={1} />,
+    );
+    const transform = getByTestId("diagram-transform");
+
+    expect(transform).toHaveAttribute("data-scale", "1");
+    expect(transform).toHaveAttribute(
+      "style",
+      "transform: translate(300px, 250px) scale(1);",
+    );
+
+    fireEvent.click(getByRole("button", { name: "Zoom in" }));
+
+    expect(transform).toHaveAttribute("data-scale", "1.25");
+    expect(requestFrame).not.toHaveBeenCalled();
   });
 
   it("toggles members when an entity is clicked without dragging", () => {
