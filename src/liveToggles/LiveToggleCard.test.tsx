@@ -45,8 +45,8 @@ describe("LiveToggleCard", () => {
     );
 
     expect(screen.getByLabelText("DETAILS")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Wrap selection" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Wrap selection" })).toHaveAttribute(
+    expect(screen.getByRole("combobox", { name: "Wrap selection" })).toBeDisabled();
+    expect(screen.getByRole("combobox", { name: "Wrap selection" })).toHaveAttribute(
       "title",
       "Select one or more lines to wrap.",
     );
@@ -57,7 +57,7 @@ describe("LiveToggleCard", () => {
         onChange={vi.fn()}
       />,
     );
-    expect(screen.getByRole("button", { name: "Wrap selection" })).toBeEnabled();
+    expect(screen.getByRole("combobox", { name: "Wrap selection" })).toBeEnabled();
   });
 
   it("explains that a live toggle is required before wrapping", () => {
@@ -69,13 +69,13 @@ describe("LiveToggleCard", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: "Wrap selection" })).toHaveAttribute(
+    expect(screen.getByRole("combobox", { name: "Wrap selection" })).toHaveAttribute(
       "title",
       "Add a live toggle first.",
     );
   });
 
-  it("shows flag state and supports keyboard navigation in the wrap menu", () => {
+  it("shows each flag state in the native wrap control", () => {
     render(
       <LiveToggleCard
         source={"!$_live_DETAILS = %false()\n!$_live_GRID = %true()"}
@@ -84,23 +84,12 @@ describe("LiveToggleCard", () => {
       />,
     );
 
-    const trigger = screen.getByRole("button", { name: "Wrap selection" });
-    fireEvent.click(trigger);
-
-    const details = screen.getByRole("menuitem", { name: "DETAILS Off" });
-    const grid = screen.getByRole("menuitem", { name: "GRID On" });
-    expect(screen.getByRole("menu", { name: "Wrap with live flag" })).toBeInTheDocument();
-    expect(details).toHaveFocus();
-
-    fireEvent.keyDown(details, { key: "ArrowDown" });
-    expect(grid).toHaveFocus();
-    fireEvent.keyDown(grid, { key: "Escape" });
-    expect(trigger).toHaveFocus();
-    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
-
-    fireEvent.click(trigger);
-    fireEvent.pointerDown(document.body);
-    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "DETAILS — Off" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "GRID — On" }),
+    ).toBeInTheDocument();
   });
 
   it("wraps selected lines with the chosen flag", () => {
@@ -116,15 +105,15 @@ describe("LiveToggleCard", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Wrap selection" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "DETAILS Off" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Wrap selection" }), {
+      target: { value: "_live_DETAILS" },
+    });
     expect(onWrap).toHaveBeenCalledWith(
       expect.objectContaining({
         source:
           "@startuml\n!$_live_DETAILS = %false()\n!if $_live_DETAILS\nclass User\n!endif /' _live_DETAILS '/\n@enduml",
       }),
     );
-    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
   it("renders exact suffix labels and emits rewritten source", () => {

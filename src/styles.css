@@ -536,6 +536,7 @@ button {
 }
 
 .view-select-label select,
+.wrap-action-select,
 .view-create-form input {
   height: 24px;
   color: #cbd5df;
@@ -551,122 +552,27 @@ button {
   padding: 0 24px 0 7px;
 }
 
-.wrap-action-container {
-  position: relative;
+.wrap-action-select {
   flex: 0 0 auto;
-}
-
-.wrap-action-trigger {
-  display: inline-flex;
-  align-items: center;
-  height: 24px;
-  gap: 5px;
-  padding: 0 7px;
-  color: #cbd5df;
-  border: 1px solid #2a3948;
-  border-radius: 5px;
-  background: #101720;
+  max-width: 150px;
+  padding: 0 24px 0 7px;
   cursor: pointer;
-  font-size: 10px;
 }
 
-.wrap-action-trigger:hover:not(:disabled),
-.wrap-action-trigger[aria-expanded="true"] {
+.wrap-action-select:hover:not(:disabled) {
   color: #e4ebf2;
   border-color: #3a4d5f;
   background: #17212b;
 }
 
-.wrap-action-trigger:focus-visible {
+.wrap-action-select:focus-visible {
   border-color: #54d6a9;
-  outline: none;
   box-shadow: 0 0 0 2px rgb(84 214 169 / 10%);
 }
 
-.wrap-action-trigger:disabled {
+.wrap-action-select:disabled {
   opacity: 0.35;
   cursor: default;
-}
-
-.wrap-action-menu {
-  position: absolute;
-  z-index: 10;
-  top: calc(100% + 5px);
-  right: 0;
-  display: grid;
-  min-width: 180px;
-  max-height: 240px;
-  overflow-y: auto;
-  padding: 5px;
-  border: 1px solid #2a3948;
-  border-radius: 7px;
-  background: #111922;
-  box-shadow: 0 10px 28px rgb(0 0 0 / 35%);
-}
-
-.wrap-action-menu-title {
-  padding: 4px 7px 6px;
-  color: #667586;
-  font-size: 9px;
-  font-weight: 650;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.wrap-action-menu-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  min-height: 28px;
-  gap: 16px;
-  padding: 5px 7px;
-  color: #cbd5df;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  cursor: pointer;
-  text-align: left;
-}
-
-.wrap-action-menu-item:hover,
-.wrap-action-menu-item:focus-visible {
-  color: #f2f7fb;
-  outline: none;
-  background: #1b2733;
-}
-
-.wrap-action-menu-name {
-  overflow: hidden;
-  font-family: monospace;
-  font-size: 10px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.wrap-action-menu-state {
-  display: inline-flex;
-  align-items: center;
-  flex: 0 0 auto;
-  gap: 5px;
-  color: #718096;
-  font-size: 9px;
-}
-
-.wrap-action-menu-state::before {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #596777;
-  content: "";
-}
-
-.wrap-action-menu-state.is-on {
-  color: #70dbb9;
-}
-
-.wrap-action-menu-state.is-on::before {
-  background: #54d6a9;
 }
 
 .view-create-form {

@@ -176,7 +176,9 @@ describe("VsCodePreviewApp", () => {
 
     render(<VsCodePreviewApp api={{ postMessage }} />);
     expect(postMessage).toHaveBeenCalledWith({ type: "ready" });
-    expect(screen.getByRole("button", { name: "Wrap selection" })).toBeDisabled();
+    expect(
+      screen.getByRole("combobox", { name: "Wrap selection" }),
+    ).toBeDisabled();
 
     send({
       type: "documentState",
@@ -187,8 +189,9 @@ describe("VsCodePreviewApp", () => {
       selection: { from, to: from + 4 },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Wrap selection" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "DETAILS Off" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Wrap selection" }), {
+      target: { value: "_live_DETAILS" },
+    });
 
     expect(postMessage).toHaveBeenLastCalledWith({
       type: "replaceSource",

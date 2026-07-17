@@ -58,14 +58,6 @@ export function useViewportTransform() {
 
   const reset = useCallback(() => setTransform(INITIAL_TRANSFORM), []);
 
-  const panBy = useCallback((deltaX: number, deltaY: number) => {
-    setTransform((current) => ({
-      ...current,
-      translateX: current.translateX + deltaX,
-      translateY: current.translateY + deltaY,
-    }));
-  }, []);
-
   const zoomAt = useCallback(
     (scale: number, point: { x: number; y: number }) => {
       setTransform((current) => zoomAtPoint(current, scale, point));
@@ -73,5 +65,5 @@ export function useViewportTransform() {
     [],
   );
 
-  return { transform, setTransform, reset, panBy, zoomAt };
+  return { transform, setTransform, reset, zoomAt };
 }

@@ -46,61 +46,56 @@ export function readLiveToggleViews(source: string): LiveToggleViews {
   const match = BLOCK_PATTERN.exec(source);
   if (!match?.groups?.body) return fallback;
 
-  if (match.groups.version === "2") {
-    try {
-      const parsed: unknown = JSON.parse(match.groups.body);
-      if (
-        typeof parsed !== "object" ||
-        parsed === null ||
-        !("activeView" in parsed) ||
-        !("views" in parsed) ||
-        typeof parsed.activeView !== "string" ||
-        typeof parsed.views !== "object" ||
-        parsed.views === null
-      ) {
-        return fallback;
-      }
+  const parsed =
+    match.groups.version === "2"
+      ? parseVersion2(match.groups.body)
+      : parseVersion1(match.groups.body);
+  if (!parsed || parsed.views.length === 0) return fallback;
 
-      const views = Object.entries(parsed.views).flatMap(([name, toggles]) => {
-        if (!name.trim() || typeof toggles !== "object" || toggles === null) {
-          return [];
-        }
-        return [{
-          name,
-          toggles: Object.fromEntries(
-            Object.entries(toggles)
-              .filter(
-                (entry): entry is [string, boolean] =>
-                  typeof entry[1] === "boolean",
-              )
-              .map(([toggleName, value]) => [`_live_${toggleName}`, value]),
-          ),
-        }];
-      });
-      if (views.length === 0) return fallback;
+  return {
+    ...parsed,
+    activeView: parsed.views.some((view) => view.name === parsed.activeView)
+      ? parsed.activeView
+      : parsed.views[0].name,
+  };
+}
 
-      return {
-        activeView: views.some((view) => view.name === parsed.activeView)
-          ? parsed.activeView
-          : views[0].name,
-        views,
-      };
-    } catch {
-      return fallback;
+function parseVersion2(body: string): LiveToggleViews | null {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    if (
+      !isRecord(parsed) ||
+      typeof parsed.activeView !== "string" ||
+      !isRecord(parsed.views)
+    ) {
+      return null;
     }
-  }
 
+    const views = Object.entries(parsed.views).flatMap(([name, toggles]) => {
+      if (!name.trim() || !isRecord(toggles)) return [];
+      return [{ name, toggles: readToggleValues(toggles, true) }];
+    });
+
+    return { activeView: parsed.activeView, views };
+  } catch {
+    return null;
+  }
+}
+
+function parseVersion1(body: string): LiveToggleViews | null {
+  // Version 1 used one JSON object per line. Keep this reader so diagrams
+  // created by earlier releases are upgraded when they are next written.
   let activeView = DEFAULT_VIEW;
   const views: LiveToggleView[] = [];
 
-  for (const line of match.groups.body.split(/\r\n|\r|\n/)) {
+  for (const line of body.split(/\r\n|\r|\n/)) {
     const activeMatch = /^active: (.+)$/.exec(line);
     if (activeMatch) {
       try {
         const parsed = JSON.parse(activeMatch[1]);
         if (typeof parsed === "string" && parsed.trim()) activeView = parsed;
       } catch {
-        return fallback;
+        return null;
       }
       continue;
     }
@@ -111,36 +106,43 @@ export function readLiveToggleViews(source: string): LiveToggleViews {
     try {
       const parsed: unknown = JSON.parse(viewMatch[1]);
       if (
-        typeof parsed !== "object" ||
-        parsed === null ||
-        !("name" in parsed) ||
-        !("toggles" in parsed) ||
+        !isRecord(parsed) ||
         typeof parsed.name !== "string" ||
         !parsed.name.trim() ||
-        typeof parsed.toggles !== "object" ||
-        parsed.toggles === null
+        !isRecord(parsed.toggles)
       ) {
-        return fallback;
+        return null;
       }
 
-      const toggles = Object.fromEntries(
-        Object.entries(parsed.toggles).filter(
-          (entry): entry is [string, boolean] =>
-            typeof entry[1] === "boolean",
-        ),
-      );
-      views.push({ name: parsed.name, toggles });
+      views.push({
+        name: parsed.name,
+        toggles: readToggleValues(parsed.toggles, false),
+      });
     } catch {
-      return fallback;
+      return null;
     }
   }
 
-  if (views.length === 0) return fallback;
-  if (!views.some((view) => view.name === activeView)) {
-    activeView = views[0].name;
-  }
-
   return { activeView, views };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readToggleValues(
+  values: Record<string, unknown>,
+  addPrefix: boolean,
+): Record<string, boolean> {
+  return Object.fromEntries(
+    Object.entries(values)
+      .filter((entry): entry is [string, boolean] => {
+        const [name, value] = entry;
+        const validName = !addPrefix || /^[A-Za-z0-9_]+$/.test(name);
+        return validName && typeof value === "boolean";
+      })
+      .map(([name, value]) => [addPrefix ? `_live_${name}` : name, value]),
+  );
 }
 
 function serializeLiveToggleViews(views: LiveToggleViews): string {

@@ -232,8 +232,9 @@ export class WebScenarioDriver implements ScenarioDriver {
 
   async wrapSelectionWith(flag: string) {
     const page = this.requirePage();
-    await page.getByRole("button", { name: "Wrap selection" }).click();
-    await page.getByRole("menuitem", { name: new RegExp(`^${flag} `) }).click();
+    await page
+      .getByRole("combobox", { name: "Wrap selection" })
+      .selectOption(`_live_${flag}`);
   }
 
   async createView(name: string) {

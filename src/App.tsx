@@ -6,28 +6,25 @@ import { useDiagramRenderer } from "./rendering/useDiagramRenderer";
 import { toggleHiddenMembers } from "./rendering/classMemberVisibility";
 import { useEditorState } from "./state/useEditorState";
 
+const MIN_SPLIT_PERCENT = 25;
+const MAX_SPLIT_PERCENT = 75;
+
+function clampSplitPercent(value: number) {
+  return Math.min(MAX_SPLIT_PERCENT, Math.max(MIN_SPLIT_PERCENT, value));
+}
+
 export default function App() {
   const { source, setSource } = useEditorState();
   const { svg, renderRevision, status } = useDiagramRenderer(source);
   const [splitPercent, setSplitPercent] = useState(50);
   const shellRef = useRef<HTMLDivElement>(null);
 
-  const beginResize = (event: React.PointerEvent<HTMLDivElement>) => {
+  const resizeTo = (clientX: number) => {
     const shell = shellRef.current;
     if (!shell || window.matchMedia("(max-width: 800px)").matches) return;
-    event.currentTarget.setPointerCapture(event.pointerId);
-
-    const onMove = (moveEvent: PointerEvent) => {
-      const rect = shell.getBoundingClientRect();
-      const next = ((moveEvent.clientX - rect.left) / rect.width) * 100;
-      setSplitPercent(Math.min(75, Math.max(25, next)));
-    };
-    const onUp = () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-    };
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
+    const rect = shell.getBoundingClientRect();
+    const next = ((clientX - rect.left) / rect.width) * 100;
+    setSplitPercent(clampSplitPercent(next));
   };
 
   return (
@@ -48,7 +45,27 @@ export default function App() {
           aria-orientation="vertical"
           aria-valuenow={Math.round(splitPercent)}
           tabIndex={0}
-          onPointerDown={beginResize}
+          onPointerDown={(event) => {
+            if (window.matchMedia("(max-width: 800px)").matches) return;
+            event.currentTarget.setPointerCapture(event.pointerId);
+          }}
+          onPointerMove={(event) => {
+            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+              resizeTo(event.clientX);
+            }
+          }}
+          onKeyDown={(event) => {
+            const nextValues: Record<string, number> = {
+              ArrowLeft: splitPercent - 5,
+              ArrowRight: splitPercent + 5,
+              Home: MIN_SPLIT_PERCENT,
+              End: MAX_SPLIT_PERCENT,
+            };
+            const next = nextValues[event.key];
+            if (next === undefined) return;
+            event.preventDefault();
+            setSplitPercent(clampSplitPercent(next));
+          }}
         >
           <span />
         </div>

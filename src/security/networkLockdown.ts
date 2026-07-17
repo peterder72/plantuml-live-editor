@@ -5,41 +5,33 @@ function blockedApi(name: string): never {
   throw new Error(`${BLOCKED_MESSAGE} (${name})`);
 }
 
+function blockedConstructor(name: string) {
+  return class {
+    constructor() {
+      blockedApi(name);
+    }
+  };
+}
+
 export function installNetworkLockdown(): void {
   globalThis.fetch = (() => blockedApi("fetch")) as typeof fetch;
-  globalThis.XMLHttpRequest = class {
-    constructor() {
-      blockedApi("XMLHttpRequest");
-    }
-  } as unknown as typeof XMLHttpRequest;
-  globalThis.WebSocket = class {
-    constructor() {
-      blockedApi("WebSocket");
-    }
-  } as unknown as typeof WebSocket;
-  globalThis.EventSource = class {
-    constructor() {
-      blockedApi("EventSource");
-    }
-  } as unknown as typeof EventSource;
-  globalThis.Worker = class {
-    constructor() {
-      blockedApi("Worker");
-    }
-  } as unknown as typeof Worker;
-  globalThis.SharedWorker = class {
-    constructor() {
-      blockedApi("SharedWorker");
-    }
-  } as unknown as typeof SharedWorker;
+  globalThis.XMLHttpRequest = blockedConstructor(
+    "XMLHttpRequest",
+  ) as unknown as typeof XMLHttpRequest;
+  globalThis.WebSocket = blockedConstructor(
+    "WebSocket",
+  ) as unknown as typeof WebSocket;
+  globalThis.EventSource = blockedConstructor(
+    "EventSource",
+  ) as unknown as typeof EventSource;
+  globalThis.Worker = blockedConstructor("Worker") as unknown as typeof Worker;
+  globalThis.SharedWorker = blockedConstructor(
+    "SharedWorker",
+  ) as unknown as typeof SharedWorker;
   Object.defineProperty(globalThis, "WebTransport", {
     configurable: false,
     writable: false,
-    value: class {
-      constructor() {
-        blockedApi("WebTransport");
-      }
-    },
+    value: blockedConstructor("WebTransport"),
   });
 
   Object.defineProperty(Navigator.prototype, "sendBeacon", {

@@ -2,6 +2,7 @@ import type {
   ScenarioCommand,
   ScenarioCommandResult,
 } from "./messages";
+import { fingerprint } from "../shared/fingerprint";
 
 export async function runScenarioCommand(
   command: ScenarioCommand,
@@ -112,12 +113,13 @@ function toggleLiveFlag(name: string, enabled: boolean) {
 }
 
 async function wrapSelection(name: string) {
-  button("Wrap selection").click();
-  await nextFrame();
-  const item = [...document.querySelectorAll<HTMLButtonElement>("[role='menuitem']")]
-    .find((candidate) => candidate.textContent?.trim().startsWith(name));
-  if (!item) throw new Error(`Wrap menu item ${name} was not found.`);
-  item.click();
+  const select = required<HTMLSelectElement>("[aria-label='Wrap selection']");
+  const option = [...select.options].find((candidate) =>
+    candidate.textContent?.trim().startsWith(name),
+  );
+  if (!option) throw new Error(`Wrap option ${name} was not found.`);
+  select.value = option.value;
+  select.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
 async function editView(
@@ -251,13 +253,4 @@ async function waitFor(predicate: () => boolean, description: string) {
     await nextFrame();
   }
   throw new Error(`Timed out waiting for ${description}.`);
-}
-
-function fingerprint(value: string) {
-  let hash = 2166136261;
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0).toString(16).padStart(8, "0");
 }

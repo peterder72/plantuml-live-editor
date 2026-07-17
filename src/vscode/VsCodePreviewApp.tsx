@@ -5,6 +5,7 @@ import type { SourceSelection } from "../liveToggles/liveToggleWrap";
 import { PreviewPanel } from "../preview/PreviewPanel";
 import { useDiagramRenderer } from "../rendering/useDiagramRenderer";
 import { toggleHiddenMembers } from "../rendering/classMemberVisibility";
+import { fingerprint } from "../shared/fingerprint";
 import type {
   ExtensionToWebviewMessage,
   WebviewToExtensionMessage,
@@ -155,13 +156,4 @@ export function VsCodePreviewApp({ api }: VsCodePreviewAppProps = {}) {
       />
     </main>
   );
-}
-
-function fingerprint(value: string) {
-  let hash = 2166136261;
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0).toString(16).padStart(8, "0");
 }

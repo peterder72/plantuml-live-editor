@@ -1,12 +1,11 @@
 import {
   Check,
-  ChevronDown,
   Pencil,
   Plus,
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useState } from "react";
 import { addLiveToggle, findLiveToggles } from "./liveToggleSource";
 import {
   type SourceSelection,
@@ -40,11 +39,6 @@ export function LiveToggleCard({
   const [viewName, setViewName] = useState("");
   const [isAddingFlag, setIsAddingFlag] = useState(false);
   const [flagName, setFlagName] = useState("");
-  const [isWrapMenuOpen, setIsWrapMenuOpen] = useState(false);
-  const wrapMenuId = useId();
-  const wrapMenuRef = useRef<HTMLDivElement>(null);
-  const wrapTriggerRef = useRef<HTMLButtonElement>(null);
-  const wrapItemRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const toggles = findLiveToggles(source);
   const viewState = readLiveToggleViews(source);
   const normalizedName = viewName.trim();
@@ -69,31 +63,6 @@ export function LiveToggleCard({
       ? "Add a live toggle first."
       : "Select one or more lines to wrap.";
 
-  useEffect(() => {
-    if (!canWrap) setIsWrapMenuOpen(false);
-  }, [canWrap]);
-
-  useEffect(() => {
-    if (!isWrapMenuOpen) return;
-
-    wrapItemRefs.current[0]?.focus();
-
-    const closeOnOutsidePointer = (event: PointerEvent) => {
-      const target = event.target;
-      if (!(target instanceof Node)) return;
-      if (
-        !wrapMenuRef.current?.contains(target) &&
-        !wrapTriggerRef.current?.contains(target)
-      ) {
-        setIsWrapMenuOpen(false);
-      }
-    };
-
-    document.addEventListener("pointerdown", closeOnOutsidePointer);
-    return () =>
-      document.removeEventListener("pointerdown", closeOnOutsidePointer);
-  }, [isWrapMenuOpen]);
-
   const saveViewName = () => {
     if (!normalizedName || duplicateName) return;
     onChange(
@@ -114,46 +83,7 @@ export function LiveToggleCard({
 
   const wrapWithToggle = (toggleName: string) => {
     const wrapped = wrapSelectionWithLiveToggle(source, selection, toggleName);
-    setIsWrapMenuOpen(false);
     if (wrapped) onWrap?.(wrapped);
-  };
-
-  const handleWrapMenuKeyDown = (
-    event: React.KeyboardEvent<HTMLButtonElement>,
-  ) => {
-    const currentIndex = wrapItemRefs.current.findIndex(
-      (item) => item === document.activeElement,
-    );
-    let nextIndex: number | null = null;
-
-    switch (event.key) {
-      case "ArrowDown":
-        nextIndex = (currentIndex + 1) % toggles.length;
-        break;
-      case "ArrowUp":
-        nextIndex =
-          (currentIndex - 1 + toggles.length) % toggles.length;
-        break;
-      case "Home":
-        nextIndex = 0;
-        break;
-      case "End":
-        nextIndex = toggles.length - 1;
-        break;
-      case "Escape":
-        event.preventDefault();
-        setIsWrapMenuOpen(false);
-        wrapTriggerRef.current?.focus();
-        return;
-      case "Tab":
-        setIsWrapMenuOpen(false);
-        return;
-      default:
-        return;
-    }
-
-    event.preventDefault();
-    wrapItemRefs.current[nextIndex]?.focus();
   };
 
   return (
@@ -173,101 +103,43 @@ export function LiveToggleCard({
               <Plus size={13} />
             </button>
           ) : (
-            <form
-              className="view-create-form"
-              onSubmit={(event) => {
-                event.preventDefault();
-                saveFlag();
+            <InlineNameForm
+              value={flagName}
+              inputLabel="New flag name"
+              placeholder="Flag name"
+              saveLabel="Save flag"
+              cancelLabel="Cancel adding flag"
+              disabled={invalidFlagName}
+              disabledTitle="Use a unique name containing only letters, numbers, or underscores"
+              onChange={setFlagName}
+              onSubmit={saveFlag}
+              onCancel={() => {
+                setFlagName("");
+                setIsAddingFlag(false);
               }}
-            >
-              <input
-                autoFocus
-                aria-label="New flag name"
-                value={flagName}
-                maxLength={80}
-                placeholder="Flag name"
-                onChange={(event) => setFlagName(event.target.value)}
-              />
-              <button
-                className="view-icon-button"
-                type="submit"
-                aria-label="Save flag"
-                title={invalidFlagName ? "Use a unique letters, numbers, or underscores name" : "Save flag"}
-                disabled={invalidFlagName}
-              >
-                <Check size={13} />
-              </button>
-              <button
-                className="view-icon-button"
-                type="button"
-                aria-label="Cancel adding flag"
-                title="Cancel"
-                onClick={() => {
-                  setFlagName("");
-                  setIsAddingFlag(false);
-                }}
-              >
-                <X size={13} />
-              </button>
-            </form>
+            />
           )}
         </div>
         <div className="view-controls">
-          <div className="wrap-action-container">
-            <button
-              ref={wrapTriggerRef}
-              className="wrap-action-trigger"
-              type="button"
-              aria-controls={isWrapMenuOpen ? wrapMenuId : undefined}
-              aria-expanded={isWrapMenuOpen}
-              aria-haspopup="menu"
-              disabled={!canWrap}
-              title={canWrap ? "Wrap selection with a live flag" : wrapUnavailableReason}
-              onClick={() => setIsWrapMenuOpen((isOpen) => !isOpen)}
-              onKeyDown={(event) => {
-                if (event.key === "ArrowDown" && !isWrapMenuOpen) {
-                  event.preventDefault();
-                  setIsWrapMenuOpen(true);
-                }
-              }}
-            >
-              <span>Wrap selection</span>
-              <ChevronDown size={12} aria-hidden="true" />
-            </button>
-            {isWrapMenuOpen && (
-              <div
-                ref={wrapMenuRef}
-                className="wrap-action-menu"
-                id={wrapMenuId}
-                role="menu"
-                aria-label="Wrap with live flag"
-              >
-                <div className="wrap-action-menu-title">Wrap with live flag</div>
-                {toggles.map((toggle, index) => (
-                  <button
-                    ref={(item) => {
-                      wrapItemRefs.current[index] = item;
-                    }}
-                    className="wrap-action-menu-item"
-                    key={toggle.name}
-                    type="button"
-                    role="menuitem"
-                    onClick={() => wrapWithToggle(toggle.name)}
-                    onKeyDown={handleWrapMenuKeyDown}
-                  >
-                    <span className="wrap-action-menu-name">{toggle.label}</span>
-                    <span
-                      className={`wrap-action-menu-state ${
-                        toggle.value ? "is-on" : "is-off"
-                      }`}
-                    >
-                      {toggle.value ? "On" : "Off"}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <select
+            className="wrap-action-select"
+            aria-label="Wrap selection"
+            value=""
+            disabled={!canWrap}
+            title={
+              canWrap ? "Wrap selection with a live flag" : wrapUnavailableReason
+            }
+            onChange={(event) => wrapWithToggle(event.target.value)}
+          >
+            <option value="" disabled>
+              Wrap selection
+            </option>
+            {toggles.map((toggle) => (
+              <option key={toggle.name} value={toggle.name}>
+                {toggle.label} — {toggle.value ? "On" : "Off"}
+              </option>
+            ))}
+          </select>
           <label className="view-select-label">
             <span>View</span>
             <select
@@ -309,51 +181,27 @@ export function LiveToggleCard({
               </button>
             </>
           ) : (
-            <form
-              className="view-create-form"
-              onSubmit={(event) => {
-                event.preventDefault();
-                saveViewName();
+            <InlineNameForm
+              value={viewName}
+              inputLabel={
+                viewFormMode === "rename" ? "Rename view" : "New view name"
+              }
+              placeholder="View name"
+              saveLabel={
+                viewFormMode === "rename" ? "Save renamed view" : "Save view"
+              }
+              cancelLabel="Cancel editing view name"
+              disabled={!normalizedName || duplicateName}
+              disabledTitle={
+                duplicateName ? "View name already exists" : "Enter a view name"
+              }
+              onChange={setViewName}
+              onSubmit={saveViewName}
+              onCancel={() => {
+                setViewName("");
+                setViewFormMode(null);
               }}
-            >
-              <input
-                autoFocus
-                aria-label={
-                  viewFormMode === "rename"
-                    ? "Rename view"
-                    : "New view name"
-                }
-                value={viewName}
-                maxLength={80}
-                placeholder="View name"
-                onChange={(event) => setViewName(event.target.value)}
-              />
-              <button
-                className="view-icon-button"
-                type="submit"
-                aria-label={
-                  viewFormMode === "rename"
-                    ? "Save renamed view"
-                    : "Save view"
-                }
-                title={duplicateName ? "View name already exists" : "Save view"}
-                disabled={!normalizedName || duplicateName}
-              >
-                <Check size={13} />
-              </button>
-              <button
-                className="view-icon-button"
-                type="button"
-                aria-label="Cancel editing view name"
-                title="Cancel"
-                onClick={() => {
-                  setViewName("");
-                  setViewFormMode(null);
-                }}
-              >
-                <X size={13} />
-              </button>
-            </form>
+            />
           )}
         </div>
       </div>
@@ -380,5 +228,68 @@ export function LiveToggleCard({
         </div>
       )}
     </section>
+  );
+}
+
+interface InlineNameFormProps {
+  value: string;
+  inputLabel: string;
+  placeholder: string;
+  saveLabel: string;
+  cancelLabel: string;
+  disabled: boolean;
+  disabledTitle: string;
+  onChange: (value: string) => void;
+  onSubmit: () => void;
+  onCancel: () => void;
+}
+
+function InlineNameForm({
+  value,
+  inputLabel,
+  placeholder,
+  saveLabel,
+  cancelLabel,
+  disabled,
+  disabledTitle,
+  onChange,
+  onSubmit,
+  onCancel,
+}: InlineNameFormProps) {
+  return (
+    <form
+      className="view-create-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSubmit();
+      }}
+    >
+      <input
+        autoFocus
+        aria-label={inputLabel}
+        value={value}
+        maxLength={80}
+        placeholder={placeholder}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      <button
+        className="view-icon-button"
+        type="submit"
+        aria-label={saveLabel}
+        title={disabled ? disabledTitle : saveLabel}
+        disabled={disabled}
+      >
+        <Check size={13} />
+      </button>
+      <button
+        className="view-icon-button"
+        type="button"
+        aria-label={cancelLabel}
+        title="Cancel"
+        onClick={onCancel}
+      >
+        <X size={13} />
+      </button>
+    </form>
   );
 }
