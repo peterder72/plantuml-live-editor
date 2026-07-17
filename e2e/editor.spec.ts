@@ -74,6 +74,42 @@ test("renders offline and preserves zoom while editing", async ({ page }) => {
   await expect(transform).toHaveAttribute("style", before ?? "");
 });
 
+test("folds and unfolds nested source from the editor gutter", async ({ page }) => {
+  await page.goto(artifactUrl);
+  const source = [
+    "@startuml",
+    "!if %true()",
+    "Alice -> Bob: Hidden while folded",
+    "Bob --> Alice: Also hidden",
+    "!endif",
+    "@enduml",
+  ].join("\n");
+
+  const editor = page.locator(".cm-content");
+  await editor.click();
+  await page.keyboard.press("ControlOrMeta+A");
+  await page.keyboard.insertText(source);
+
+  const openMarker = page
+    .locator(".cm-foldGutter .cm-gutterElement")
+    .filter({ hasText: "⌄" });
+  await expect(openMarker).toHaveCount(1);
+  await openMarker.click();
+
+  await expect(page.locator(".cm-foldPlaceholder")).toBeVisible();
+  await expect(editor).not.toContainText("Hidden while folded");
+  await expect(editor).not.toContainText("!endif");
+
+  const closedMarker = page
+    .locator(".cm-foldGutter .cm-gutterElement")
+    .filter({ hasText: "›" })
+    .last();
+  await closedMarker.click();
+  await expect(page.locator(".cm-foldPlaceholder")).toHaveCount(0);
+  await expect(editor).toContainText("Hidden while folded");
+  await expect(editor).toContainText("!endif");
+});
+
 test("exports SVG with the selected background and fixed web filename", async ({
   page,
 }) => {

@@ -6,6 +6,8 @@ import {
   indentWithTab,
 } from "@codemirror/commands";
 import {
+  foldGutter,
+  foldKeymap,
   HighlightStyle,
   StreamLanguage,
   syntaxHighlighting,
@@ -23,6 +25,8 @@ import { tags } from "@lezer/highlight";
 import { useEffect, useRef } from "react";
 import type { SourceSelection } from "../liveToggles/liveToggleWrap";
 import { copyEditorSelection } from "./editorClipboard";
+import { minimalDocumentChange } from "./editorDocumentChange";
+import { plantUmlFolding } from "./plantUmlFolding";
 
 interface PlantUmlEditorProps {
   value: string;
@@ -197,18 +201,21 @@ export function PlantUmlEditor({
         doc: initialValueRef.current,
         extensions: [
           lineNumbers(),
+          foldGutter(),
           highlightActiveLineGutter(),
           history(),
           drawSelection(),
           highlightActiveLine(),
           closeBrackets(),
           plantUmlLanguage,
+          plantUmlFolding,
           syntaxHighlighting(highlightStyle),
           editorTheme,
           keymap.of([
             ...closeBracketsKeymap,
             ...defaultKeymap,
             ...historyKeymap,
+            ...foldKeymap,
             indentWithTab,
           ]),
           EditorView.lineWrapping,
@@ -237,10 +244,9 @@ export function PlantUmlEditor({
 
   useEffect(() => {
     const view = viewRef.current;
-    if (!view || view.state.doc.toString() === value) return;
-    view.dispatch({
-      changes: { from: 0, to: view.state.doc.length, insert: value },
-    });
+    if (!view) return;
+    const change = minimalDocumentChange(view.state.doc.toString(), value);
+    if (change) view.dispatch({ changes: change });
   }, [value]);
 
   useEffect(() => {
