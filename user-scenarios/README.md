@@ -1,13 +1,19 @@
 # User scenarios
 
-Cucumber feature files are the authoritative high-level user scenarios for the
-standalone web application and VS Code extension.
+Cucumber feature files are the authoritative and sole end-to-end user scenarios
+for the standalone web application and VS Code extension. Playwright remains an
+implementation detail of the web scenario driver; there is no separate
+Playwright test suite.
 
 ## Where scenarios belong
 
 - Start in `features/common`. Common scenarios run unchanged against both apps.
 - Use `features/web` only for behavior that the VS Code extension does not offer.
 - Use `features/vscode` only for behavior that the web app does not offer.
+
+A missing driver capability is not a reason to classify shared behavior as
+platform-only. Extend the driver or obtain explicit approval before reducing
+cross-platform scenario coverage.
 
 Editor APIs, selectors, commands, and wait strategies are implementation
 details. Put those differences in the platform drivers under `support`, not in
@@ -26,15 +32,18 @@ The profiles in `cucumber.mjs` select these suites:
 - `web-firefox`: common plus web-only features.
 - `vscode`: common plus VS Code-only features.
 
-Run all user scenarios with:
+Run all end-to-end scenarios with:
 
 ```sh
-bun run test:scenarios
+bun run test:e2e
 ```
 
 Individual surfaces can be run with `bun run test:scenarios:web` or
 `bun run test:scenarios:vscode`. Reports are written to
 `test-results/cucumber/`.
+
+Vitest remains responsible for implementation-level cases such as SVG
+sanitization, transform math, render serialization, and source rewriting.
 
 The workspace configures the official Cucumber VS Code extension to index
 `features/**/*.feature` and the TypeScript glue under `support/**/*.ts`. This

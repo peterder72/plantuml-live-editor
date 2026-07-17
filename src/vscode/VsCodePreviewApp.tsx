@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { RenderStatus } from "../components/AppHeader";
 import { LiveToggleCard } from "../liveToggles/LiveToggleCard";
 import type { SourceSelection } from "../liveToggles/liveToggleWrap";
@@ -9,6 +9,7 @@ import type {
   ExtensionToWebviewMessage,
   WebviewToExtensionMessage,
 } from "./messages";
+import { runScenarioCommand } from "./scenarioBridge";
 
 export interface VsCodeApi {
   postMessage(message: WebviewToExtensionMessage): void;
@@ -45,6 +46,23 @@ export function VsCodePreviewApp({ api }: VsCodePreviewAppProps = {}) {
         setHostError(null);
       } else if (message.type === "showError") {
         setHostError(message.message);
+      } else if (message.type === "scenarioCommand") {
+        void runScenarioCommand(message.command).then(
+          (result) =>
+            vscode.postMessage({
+              type: "scenarioResult",
+              requestId: message.requestId,
+              ok: true,
+              result,
+            }),
+          (error: unknown) =>
+            vscode.postMessage({
+              type: "scenarioResult",
+              requestId: message.requestId,
+              ok: false,
+              error: error instanceof Error ? error.message : String(error),
+            }),
+        );
       }
     };
 
@@ -95,9 +113,22 @@ export function VsCodePreviewApp({ api }: VsCodePreviewAppProps = {}) {
     });
   };
 
-  const visibleStatus: RenderStatus = hostError
-    ? { kind: "error", label: hostError }
-    : status;
+  const visibleStatus: RenderStatus = useMemo(
+    () => (hostError ? { kind: "error", label: hostError } : status),
+    [hostError, status],
+  );
+
+  useEffect(() => {
+    if (!hasDocumentState) return;
+    vscode.postMessage({
+      type: "renderStatus",
+      documentUri,
+      documentVersion: version,
+      kind: visibleStatus.kind,
+      label: visibleStatus.label,
+      svgFingerprint: fingerprint(svg),
+    });
+  }, [documentUri, hasDocumentState, svg, version, visibleStatus, vscode]);
 
   return (
     <main className="vscode-preview">

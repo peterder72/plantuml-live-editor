@@ -38,22 +38,25 @@ that the embedded Graphviz WASM payload and zero-egress security controls are
 present. Open that file directly in a current Chrome, Edge, or Firefox browser;
 no server or network is required.
 
-For the browser test:
+Install the Playwright browsers used by the Cucumber web drivers:
 
 ```sh
-bunx playwright install chromium
+bunx playwright install chromium firefox
 bun run test:e2e
 ```
 
-High-level Cucumber user scenarios run against Chromium, Firefox, and the VS
-Code Extension Host:
+`test:e2e` is the sole end-to-end entry point. It runs the Cucumber user
+scenarios against Chromium, Firefox, and the VS Code Extension Host. Individual
+surfaces can also be run directly:
 
 ```sh
-bun run test:scenarios
+bun run test:scenarios:web
+bun run test:scenarios:vscode
 ```
 
-Common Gherkin scenarios and the rules for platform-only coverage are described
-in `user-scenarios/README.md`.
+Unit tests continue to own sanitizer details, transform math, stale-render
+algorithms, and source-rewrite edge cases. Common Gherkin scenarios and the
+rules for platform-only coverage are described in `user-scenarios/README.md`.
 
 ## VS Code Extension
 

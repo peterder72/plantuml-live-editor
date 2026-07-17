@@ -9,6 +9,57 @@ export interface DocumentStateMessage {
   selection: SourceSelection;
 }
 
+export type ScenarioCommand =
+  | { action: "inspect" }
+  | { action: "panAndZoom" }
+  | { action: "fitAndReset" }
+  | { action: "toggleLiveFlag"; name: string; enabled: boolean }
+  | { action: "wrapSelection"; name: string }
+  | { action: "createView"; name: string }
+  | { action: "switchView"; name: string }
+  | { action: "renameView"; name: string }
+  | { action: "clickClass"; name: string }
+  | { action: "exportWhiteSvg" }
+  | { action: "checkNetworkApis" };
+
+export interface ScenarioCommandResult {
+  svgFingerprint: string;
+  svgText: string;
+  svgWidth: string;
+  transformStyle: string;
+  scale: string;
+  activeView: string;
+  liveFlags: Record<string, boolean>;
+  exportFileName: string;
+  exportFeedback: string;
+  exportFormat: string;
+  exportBackground: string;
+  networkApisBlocked?: boolean;
+}
+
+export interface ScenarioCommandMessage {
+  type: "scenarioCommand";
+  requestId: number;
+  command: ScenarioCommand;
+}
+
+export interface ScenarioResultMessage {
+  type: "scenarioResult";
+  requestId: number;
+  ok: boolean;
+  error?: string;
+  result?: ScenarioCommandResult;
+}
+
+export interface RenderStatusMessage {
+  type: "renderStatus";
+  documentUri: string;
+  documentVersion: number;
+  kind: "initializing" | "rendering" | "success" | "error";
+  label: string;
+  svgFingerprint: string;
+}
+
 export interface ReadyMessage {
   type: "ready";
 }
@@ -36,9 +87,12 @@ export interface ShowErrorMessage {
 
 export type ExtensionToWebviewMessage =
   | DocumentStateMessage
-  | ShowErrorMessage;
+  | ShowErrorMessage
+  | ScenarioCommandMessage;
 
 export type WebviewToExtensionMessage =
   | ReadyMessage
   | ReplaceSourceMessage
-  | RenderedMessage;
+  | RenderedMessage
+  | RenderStatusMessage
+  | ScenarioResultMessage;

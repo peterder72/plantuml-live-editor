@@ -17,7 +17,7 @@
     "test:scenarios:vscode": "bun run build:vscode && bun run build:scenarios && bun scripts/run-vscode-scenarios.ts",
     "test:scenarios": "bun run build && bun run build:vscode && bun run build:scenarios && cucumber-js --profile web-chromium && cucumber-js --profile web-firefox && bun scripts/run-vscode-scenarios.ts",
     "test": "vitest run",
-    "test:e2e": "playwright test",
+    "test:e2e": "bun run test:scenarios",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ."
   },

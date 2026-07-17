@@ -17,5 +17,5 @@
     "jsx": "react-jsx",
     "types": ["vitest/globals", "@testing-library/jest-dom"]
   },
-  "include": ["src", "vscode/src", "e2e", "scripts", "user-scenarios", "cucumber.mjs", "vite.config.ts", "vscode/vite.extension.config.ts", "vscode/vite.webview.config.ts", "playwright.config.ts"]
+  "include": ["src", "vscode/src", "scripts", "user-scenarios", "cucumber.mjs", "vite.config.ts", "vscode/vite.extension.config.ts", "vscode/vite.webview.config.ts"]
 }

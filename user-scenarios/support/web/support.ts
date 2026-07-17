@@ -7,6 +7,7 @@ import "../common/steps";
 import { ScenarioWorld, type ScenarioWorldParameters } from "../common/world";
 import { WebScenarioDriver } from "./driver";
 import "./hooks";
+import "./steps";
 
 class WebScenarioWorld extends ScenarioWorld {
   constructor(options: IWorldOptions<ScenarioWorldParameters>) {

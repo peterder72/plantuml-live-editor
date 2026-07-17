@@ -1,6 +1,8 @@
 import * as vscode from "vscode";
 import type {
   ExtensionToWebviewMessage,
+  ScenarioCommand,
+  ScenarioCommandResult,
   WebviewToExtensionMessage,
 } from "../../src/vscode/messages";
 
@@ -15,6 +17,23 @@ class PreviewPanel {
   private readonly disposables: vscode.Disposable[] = [];
   private lastDocumentVersionSent = 0;
   private lastSelectionSent = { from: 0, to: 0 };
+  private nextScenarioRequestId = 1;
+  private readonly pendingScenarioRequests = new Map<
+    number,
+    {
+      resolve: (result: ScenarioCommandResult) => void;
+      reject: (error: Error) => void;
+      timeout: ReturnType<typeof setTimeout>;
+    }
+  >();
+  private lastStatus:
+    | {
+        documentVersion: number;
+        kind: "initializing" | "rendering" | "success" | "error";
+        label: string;
+        svgFingerprint: string;
+      }
+    | undefined;
   private lastRendered:
     | {
         documentVersion: number;
@@ -71,6 +90,7 @@ class PreviewPanel {
     if (nextUri === this.document.uri.toString()) return;
     this.document = document;
     this.lastRendered = undefined;
+    this.lastStatus = undefined;
     this.panel.title = getPreviewTitle(document);
     void this.postDocumentState();
   }
@@ -82,7 +102,35 @@ class PreviewPanel {
       lastDocumentVersionSent: this.lastDocumentVersionSent,
       lastSelectionSent: this.lastSelectionSent,
       lastRendered: this.lastRendered,
+      lastStatus: this.lastStatus,
     };
+  }
+
+  async runScenarioCommand(command: ScenarioCommand) {
+    if (this.context.extensionMode !== vscode.ExtensionMode.Test) {
+      throw new Error("Preview scenario commands are only available in extension tests.");
+    }
+    const requestId = this.nextScenarioRequestId++;
+    return new Promise<ScenarioCommandResult>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pendingScenarioRequests.delete(requestId);
+        reject(new Error(`Timed out running preview scenario command ${command.action}.`));
+      }, 10_000);
+      this.pendingScenarioRequests.set(requestId, { resolve, reject, timeout });
+      void this.postMessage({ type: "scenarioCommand", requestId, command }).then(
+        (posted) => {
+          if (posted) return;
+          clearTimeout(timeout);
+          this.pendingScenarioRequests.delete(requestId);
+          reject(new Error("The preview webview was not ready for a scenario command."));
+        },
+        (error: unknown) => {
+          clearTimeout(timeout);
+          this.pendingScenarioRequests.delete(requestId);
+          reject(error instanceof Error ? error : new Error(String(error)));
+        },
+      );
+    });
   }
 
   private async handleMessage(message: WebviewToExtensionMessage) {
@@ -99,6 +147,27 @@ class PreviewPanel {
         renderRevision: message.renderRevision,
         svgFingerprint: message.svgFingerprint,
       };
+      return;
+    }
+
+    if (message.type === "renderStatus") {
+      if (message.documentUri !== this.document.uri.toString()) return;
+      this.lastStatus = {
+        documentVersion: message.documentVersion,
+        kind: message.kind,
+        label: message.label,
+        svgFingerprint: message.svgFingerprint,
+      };
+      return;
+    }
+
+    if (message.type === "scenarioResult") {
+      const pending = this.pendingScenarioRequests.get(message.requestId);
+      if (!pending) return;
+      clearTimeout(pending.timeout);
+      this.pendingScenarioRequests.delete(message.requestId);
+      if (message.ok && message.result) pending.resolve(message.result);
+      else pending.reject(new Error(message.error ?? "Preview scenario command failed."));
       return;
     }
 
@@ -222,6 +291,11 @@ class PreviewPanel {
   private dispose() {
     if (this.disposed) return;
     this.disposed = true;
+    for (const pending of this.pendingScenarioRequests.values()) {
+      clearTimeout(pending.timeout);
+      pending.reject(new Error("The preview was disposed during a scenario command."));
+    }
+    this.pendingScenarioRequests.clear();
     for (const disposable of this.disposables.splice(0)) disposable.dispose();
     this.onDispose();
   }
@@ -269,6 +343,10 @@ export function activate(context: vscode.ExtensionContext) {
     getPreviewState: (uri: string) => {
       const state = preview?.getState();
       return state?.documentUri === uri ? state : undefined;
+    },
+    runPreviewScenario: (command: ScenarioCommand) => {
+      if (!preview) throw new Error("No PlantUML preview is open.");
+      return preview.runScenarioCommand(command);
     },
   };
 }

@@ -7,6 +7,7 @@ import "../common/steps";
 import { ScenarioWorld, type ScenarioWorldParameters } from "../common/world";
 import { VsCodeScenarioDriver } from "./driver";
 import "./hooks";
+import "./steps";
 
 class VsCodeScenarioWorld extends ScenarioWorld {
   constructor(options: IWorldOptions<ScenarioWorldParameters>) {

@@ -18,7 +18,11 @@ export function ViewportControls({
   onReset,
 }: ViewportControlsProps) {
   return (
-    <div className="viewport-controls" aria-label="Diagram view controls">
+    <div
+      className="viewport-controls"
+      aria-label="Diagram view controls"
+      onPointerDown={(event) => event.stopPropagation()}
+    >
       <button type="button" title="Zoom out" aria-label="Zoom out" onClick={onZoomOut}>
         <Minus size={16} />
       </button>
