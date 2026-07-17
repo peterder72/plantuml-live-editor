@@ -1,0 +1,4 @@
+{
+  "cucumber.features": ["user-scenarios/features/**/*.feature"],
+  "cucumber.glue": ["user-scenarios/support/**/*.ts"]
+}

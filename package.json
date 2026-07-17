@@ -12,6 +12,10 @@
     "publish:vscode": "bun run build:vscode && cd vscode && ../node_modules/.bin/vsce publish --azure-credential --no-dependencies",
     "test:vscode:unit": "vitest run src/rendering/useDiagramRenderer.test.ts src/rendering/plantumlRenderer.test.ts src/vscode/VsCodePreviewApp.test.tsx",
     "test:vscode": "bun run test:vscode:unit && bun run build:vscode && bun scripts/run-vscode-tests.ts",
+    "build:scenarios": "vite build --config user-scenarios/vite.config.ts && bun scripts/prepare-scenario-tests.ts",
+    "test:scenarios:web": "bun run build && bun run build:scenarios && cucumber-js --profile web-chromium && cucumber-js --profile web-firefox",
+    "test:scenarios:vscode": "bun run build:vscode && bun run build:scenarios && bun scripts/run-vscode-scenarios.ts",
+    "test:scenarios": "bun run build && bun run build:vscode && bun run build:scenarios && cucumber-js --profile web-chromium && cucumber-js --profile web-firefox && bun scripts/run-vscode-scenarios.ts",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit",
@@ -33,6 +37,7 @@
     "react-dom": "19.1.1"
   },
   "devDependencies": {
+    "@cucumber/cucumber": "12.9.0",
     "@eslint/js": "9.32.0",
     "@playwright/test": "1.54.2",
     "@testing-library/jest-dom": "6.6.4",

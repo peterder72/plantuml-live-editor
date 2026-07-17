@@ -75,7 +75,6 @@ async function run() {
   }, "the initial diagram render");
   const initialState = extensionApi.getPreviewState(sourceUri.toString());
   const initialFingerprint = initialState.lastRendered.svgFingerprint;
-  const initialRevision = initialState.lastRendered.renderRevision;
 
   editor.selection = new vscode.Selection(
     new vscode.Position(1, 0),
@@ -85,22 +84,6 @@ async function run() {
     const state = extensionApi.getPreviewState(sourceUri.toString());
     return state?.lastSelectionSent.from === 10 && state.lastSelectionSent.to === 15;
   }, "the native editor selection to reach the webview");
-
-  const editApplied = await editor.edit((builder) => {
-    builder.insert(new vscode.Position(2, 0), "Bob --> Alice: Hi\n");
-  });
-  assert.equal(editApplied, true, "source edit is applied");
-  assert.match(document.getText(), /Bob --> Alice: Hi/);
-  assert.equal(extensionApi.getPreviewCount(), 1, "source edits reuse the preview panel");
-
-  await waitFor(() => {
-    const state = extensionApi.getPreviewState(sourceUri.toString());
-    return (
-      state?.lastRendered?.documentVersion === document.version &&
-      state.lastRendered.renderRevision > initialRevision &&
-      state.lastRendered.svgFingerprint !== initialFingerprint
-    );
-  }, "the edited document to produce a different SVG");
 
   await vscode.commands.executeCommand(PREVIEW_COMMAND);
   assert.equal(extensionApi.getPreviewCount(), 1, "reopening reuses the preview panel");

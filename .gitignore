@@ -4,6 +4,7 @@ playwright-report/
 test-results/
 .playwright-cli/
 .vscode-test/
+.scenario-dist/
 output/
 .DS_Store
 *.vsix

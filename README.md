@@ -45,6 +45,16 @@ bunx playwright install chromium
 bun run test:e2e
 ```
 
+High-level Cucumber user scenarios run against Chromium, Firefox, and the VS
+Code Extension Host:
+
+```sh
+bun run test:scenarios
+```
+
+Common Gherkin scenarios and the rules for platform-only coverage are described
+in `user-scenarios/README.md`.
+
 ## VS Code Extension
 
 Build the extension host and offline preview webview:
