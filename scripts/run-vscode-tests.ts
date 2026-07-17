@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
-import { runTests } from "@vscode/test-electron";
+import { runIsolatedVSCodeTests } from "./run-isolated-vscode-tests";
 
-await runTests({
+await runIsolatedVSCodeTests({
   extensionDevelopmentPath: resolve("vscode"),
   extensionTestsPath: resolve("vscode/test/suite/index.cjs"),
 });
