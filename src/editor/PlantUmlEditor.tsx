@@ -22,6 +22,7 @@ import {
 import { tags } from "@lezer/highlight";
 import { useEffect, useRef } from "react";
 import type { SourceSelection } from "../liveToggles/liveToggleWrap";
+import { copyEditorSelection } from "./editorClipboard";
 
 interface PlantUmlEditorProps {
   value: string;
@@ -219,6 +220,9 @@ export function PlantUmlEditor({
               const main = update.state.selection.main;
               selectionHandlerRef.current({ from: main.from, to: main.to });
             }
+          }),
+          EditorView.domEventHandlers({
+            copy: copyEditorSelection,
           }),
         ],
       }),
