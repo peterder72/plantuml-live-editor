@@ -84,6 +84,10 @@ class PreviewPanel {
     this.panel.reveal(column);
   }
 
+  close() {
+    this.panel.dispose();
+  }
+
   followDocument(document: vscode.TextDocument) {
     if (this.disposed) return;
     const nextUri = document.uri.toString();
@@ -348,6 +352,7 @@ export function activate(context: vscode.ExtensionContext) {
       if (!preview) throw new Error("No PlantUML preview is open.");
       return preview.runScenarioCommand(command);
     },
+    disposePreview: () => preview?.close(),
   };
 }
 

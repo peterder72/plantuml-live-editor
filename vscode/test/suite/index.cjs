@@ -33,6 +33,7 @@ async function run() {
   assert.ok(extension, "development extension is discoverable");
   const extensionApi = await extension.activate();
   assert.equal(typeof extensionApi.getPreviewCount, "function");
+  assert.equal(typeof extensionApi.disposePreview, "function");
 
   await vscode.commands.executeCommand(PREVIEW_COMMAND);
   assert.equal(
@@ -117,7 +118,7 @@ async function run() {
     "the preview is no longer associated with the first document",
   );
 
-  await vscode.commands.executeCommand("workbench.action.closeEditorsInOtherGroups");
+  extensionApi.disposePreview();
   await waitFor(
     () => extensionApi.getPreviewCount() === 0,
     "the followed preview panel to dispose",
@@ -137,7 +138,7 @@ async function run() {
     );
   }, "the second document preview to render after being reopened");
 
-  await vscode.commands.executeCommand("workbench.action.closeAllEditors");
+  extensionApi.disposePreview();
   await waitFor(
     () => extensionApi.getPreviewCount() === 0,
     "the preview panel to dispose",
