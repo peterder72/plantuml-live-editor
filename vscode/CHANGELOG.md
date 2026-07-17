@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.3
+
+- Improved export menu
+
 ## 0.3.1
 
 - Added the live variable name as a PlantUML block comment after `!endif` when

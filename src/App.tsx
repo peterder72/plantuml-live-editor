@@ -8,8 +8,7 @@ import { useEditorState } from "./state/useEditorState";
 
 export default function App() {
   const { source, setSource } = useEditorState();
-  const { svg, renderRevision, status, exportPng } =
-    useDiagramRenderer(source);
+  const { svg, renderRevision, status } = useDiagramRenderer(source);
   const [splitPercent, setSplitPercent] = useState(50);
   const shellRef = useRef<HTMLDivElement>(null);
 
@@ -58,7 +57,6 @@ export default function App() {
           svg={svg}
           renderRevision={renderRevision}
           status={status}
-          onExportPng={exportPng}
           onToggleMembers={(entity) =>
             setSource((current) => toggleHiddenMembers(current, entity))
           }

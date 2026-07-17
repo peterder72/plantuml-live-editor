@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RenderStatus } from "../components/AppHeader";
-import { downloadPng } from "./diagramExporter";
 import {
   plantUmlRenderer,
   type RenderResult,
@@ -132,14 +131,5 @@ export function useDiagramRenderer(source: string | null) {
     return () => window.clearTimeout(timeout);
   }, [source]);
 
-  const exportPng = useCallback(() => {
-    void downloadPng(svg).catch((error: unknown) => {
-      setStatus({
-        kind: "error",
-        label: error instanceof Error ? error.message : "Unable to export PNG.",
-      });
-    });
-  }, [svg]);
-
-  return { svg, renderRevision, acceptedRender, status, exportPng };
+  return { svg, renderRevision, acceptedRender, status };
 }

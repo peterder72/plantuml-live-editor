@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
+import { readFile } from "node:fs/promises";
 
 const artifactUrl = pathToFileURL(resolve("dist/index.html")).href;
 
@@ -71,6 +72,34 @@ test("renders offline and preserves zoom while editing", async ({ page }) => {
   await expect(page.getByText(/Rendered in/)).toBeVisible({ timeout: 30_000 });
 
   await expect(transform).toHaveAttribute("style", before ?? "");
+});
+
+test("exports SVG with the selected background and fixed web filename", async ({
+  page,
+}) => {
+  await page.goto(artifactUrl);
+  await expect(page.locator(".diagram-content svg")).toBeVisible({
+    timeout: 30_000,
+  });
+
+  await page.getByRole("button", { name: /Export/ }).click();
+  await expect(page.getByText("diagram.png", { exact: true })).toBeVisible();
+  await page.getByRole("radio", { name: "SVG" }).check();
+  await page.getByRole("radio", { name: "White" }).check();
+  await expect(page.getByText("diagram.svg", { exact: true })).toBeVisible();
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Save" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("diagram.svg");
+  const downloadPath = await download.path();
+  if (!downloadPath) throw new Error("Exported SVG has no download path.");
+  const exported = await readFile(downloadPath, "utf8");
+  expect(exported).toContain('data-export-background="white"');
+
+  await page.getByRole("button", { name: /Export/ }).click();
+  await expect(page.getByRole("radio", { name: "SVG" })).toBeChecked();
+  await expect(page.getByRole("radio", { name: "White" })).toBeChecked();
 });
 
 test("renders beyond 4096 and preserves it when the 8192 limit is exceeded", async ({

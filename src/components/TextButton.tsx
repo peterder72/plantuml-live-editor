@@ -1,20 +1,20 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 
 interface TextButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon: ReactNode;
   children: ReactNode;
 }
 
-export function TextButton({
-  icon,
-  children,
-  type = "button",
-  ...props
-}: TextButtonProps) {
-  return (
-    <button type={type} className="text-button" {...props}>
-      {icon}
-      {children}
-    </button>
-  );
-}
+export const TextButton = forwardRef<HTMLButtonElement, TextButtonProps>(
+  function TextButton(
+    { icon, children, type = "button", ...props },
+    ref,
+  ) {
+    return (
+      <button ref={ref} type={type} className="text-button" {...props}>
+        {icon}
+        {children}
+      </button>
+    );
+  },
+);

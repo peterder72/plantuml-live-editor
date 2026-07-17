@@ -289,6 +289,8 @@ describe("VsCodePreviewApp", () => {
 
     expect(renderSpy).toHaveBeenCalledTimes(1);
     expect(screen.getByText("second.puml")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Export/ }));
+    expect(screen.getByText("second.png")).toBeInTheDocument();
     expect(postMessage).toHaveBeenLastCalledWith(
       expect.objectContaining({
         type: "rendered",

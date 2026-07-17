@@ -1,15 +1,14 @@
-import { CircleAlert, Download } from "lucide-react";
+import { CircleAlert } from "lucide-react";
 import { PanelFooter, PanelHeader } from "../components/Panel";
-import { TextButton } from "../components/TextButton";
 import type { RenderStatus } from "../components/AppHeader";
-import { downloadSvg } from "../rendering/diagramExporter";
+import { DiagramExportMenu } from "./DiagramExportMenu";
 import { DiagramViewport } from "./DiagramViewport";
 
 interface PreviewPanelProps {
   svg: string;
   renderRevision: number;
   status: RenderStatus;
-  onExportPng: () => void;
+  exportFileName?: string;
   onToggleMembers?: (entity: string) => void;
   title?: string;
   showStatusInFooter?: boolean;
@@ -19,7 +18,7 @@ export function PreviewPanel({
   svg,
   renderRevision,
   status,
-  onExportPng,
+  exportFileName = "diagram",
   onToggleMembers,
   title = "Preview",
   showStatusInFooter = false,
@@ -29,22 +28,7 @@ export function PreviewPanel({
       <span className="interaction-hint">
         Scroll to zoom · Drag to pan · Click a class to hide members
       </span>
-      <TextButton
-        icon={<Download size={13} />}
-        onClick={() => downloadSvg(svg)}
-        disabled={!svg}
-        title="Download SVG"
-      >
-        SVG
-      </TextButton>
-      <TextButton
-        icon={<Download size={13} />}
-        onClick={onExportPng}
-        disabled={!svg}
-        title="Download PNG"
-      >
-        PNG
-      </TextButton>
+      <DiagramExportMenu svg={svg} sourceFileName={exportFileName} />
     </div>
   );
 

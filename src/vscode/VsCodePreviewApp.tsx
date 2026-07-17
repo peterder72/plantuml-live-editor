@@ -29,7 +29,7 @@ export function VsCodePreviewApp({ api }: VsCodePreviewAppProps = {}) {
   const [fileName, setFileName] = useState("PlantUML");
   const [selection, setSelection] = useState<SourceSelection>({ from: 0, to: 0 });
   const [hostError, setHostError] = useState<string | null>(null);
-  const { svg, renderRevision, acceptedRender, status, exportPng } =
+  const { svg, renderRevision, acceptedRender, status } =
     useDiagramRenderer(hasDocumentState ? source : null);
 
   useEffect(() => {
@@ -115,7 +115,7 @@ export function VsCodePreviewApp({ api }: VsCodePreviewAppProps = {}) {
         svg={svg}
         renderRevision={renderRevision}
         status={visibleStatus}
-        onExportPng={exportPng}
+        exportFileName={fileName}
         onToggleMembers={(entity) =>
           updateSource(toggleHiddenMembers(source, entity))
         }
