@@ -27,6 +27,21 @@ bun run lint
 bun run test
 ```
 
+Install the browser binaries once, then run every quality check, verified
+build, browser test, Extension Host test, and Cucumber scenario with:
+
+```sh
+bunx playwright install chromium firefox
+bun run test:all
+```
+
+On headless Linux, provide a virtual display for the VS Code Extension Host:
+
+```sh
+bunx playwright install --with-deps chromium firefox
+xvfb-run -a bun run test:all
+```
+
 ## Offline Build
 
 ```sh
@@ -45,14 +60,20 @@ bunx playwright install chromium firefox
 bun run test:e2e
 ```
 
-`test:e2e` is the sole end-to-end entry point. It runs the Cucumber user
-scenarios against Chromium, Firefox, and the VS Code Extension Host. Individual
-surfaces can also be run directly:
+`test:e2e` is the aggregate end-to-end entry point. It runs the Cucumber
+scenarios through Playwright on Chromium and Firefox, then in the VS Code
+Extension Host. The same scenarios can be run together or by surface:
 
 ```sh
+bun run test:scenarios
 bun run test:scenarios:web
 bun run test:scenarios:vscode
 ```
+
+GitHub Actions uses Bun 1.3.14 and runs the quality, web, and VS Code suites on
+every pull request and push to `main`. A `main` build is deployed to GitHub
+Pages only after all three jobs pass. Failure diagnostics are retained as
+workflow artifacts.
 
 Unit tests continue to own sanitizer details, transform math, stale-render
 algorithms, and source-rewrite edge cases. Common Gherkin scenarios and the

@@ -105,8 +105,8 @@
   "scripts": {
     "build:host": "vite build --config vite.extension.config.ts",
     "build:webview": "vite build --config vite.webview.config.ts",
-    "build": "npm run build:host && npm run build:webview",
-    "package": "vsce package --no-dependencies"
+    "build": "bun run build:host && bun run build:webview",
+    "package": "bunx vsce package --no-dependencies"
   },
   "devDependencies": {
     "@vscode/vsce": "latest"
