@@ -1,0 +1,3 @@
+[submodule "vendor/plantuml"]
+	path = vendor/plantuml
+	url = https://github.com/peterder72/plantuml-extended.git

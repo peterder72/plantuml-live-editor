@@ -40,7 +40,7 @@ interface ExtensionTestApi {
   getPreviewCount(): number;
   getPreviewState(uri: string): PreviewState | undefined;
   runPreviewScenario(command: ScenarioCommand): Promise<ScenarioCommandResult>;
-  disposePreview(): void;
+  disposePreview(): Promise<void>;
 }
 
 export class VsCodeScenarioDriver implements ScenarioDriver {
@@ -311,10 +311,11 @@ export class VsCodeScenarioDriver implements ScenarioDriver {
 
   async dispose() {
     if (this.extensionApi?.getPreviewCount()) {
-      this.extensionApi.disposePreview();
-      await waitFor(
-        () => this.extensionApi?.getPreviewCount() === 0,
-        "the VS Code preview to dispose",
+      await this.extensionApi.disposePreview();
+      assert.equal(
+        this.extensionApi.getPreviewCount(),
+        0,
+        "the VS Code preview disposes",
       );
     }
 
@@ -419,7 +420,7 @@ export class VsCodeScenarioDriver implements ScenarioDriver {
 async function waitFor(
   predicate: () => boolean | Promise<boolean>,
   description: string,
-  timeout = 10_000,
+  timeout = renderTimeout,
 ) {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
