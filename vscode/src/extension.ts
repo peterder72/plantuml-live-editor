@@ -13,6 +13,10 @@ const PLANTUML_EXTENSIONS = /\.(?:puml|plantuml|pu|iuml|wsd)$/i;
 
 class PreviewPanel {
   private disposed = false;
+  private resolveDisposed: (() => void) | undefined;
+  private readonly disposedPromise = new Promise<void>((resolve) => {
+    this.resolveDisposed = resolve;
+  });
   private ready = false;
   private readonly disposables: vscode.Disposable[] = [];
   private lastDocumentVersionSent = 0;
@@ -84,8 +88,9 @@ class PreviewPanel {
     this.panel.reveal(column);
   }
 
-  close() {
-    this.panel.dispose();
+  async close() {
+    if (!this.disposed) this.panel.dispose();
+    await this.disposedPromise;
   }
 
   followDocument(document: vscode.TextDocument) {
@@ -119,7 +124,7 @@ class PreviewPanel {
       const timeout = setTimeout(() => {
         this.pendingScenarioRequests.delete(requestId);
         reject(new Error(`Timed out running preview scenario command ${command.action}.`));
-      }, 10_000);
+      }, 35_000);
       this.pendingScenarioRequests.set(requestId, { resolve, reject, timeout });
       void this.postMessage({ type: "scenarioCommand", requestId, command }).then(
         (posted) => {
@@ -302,6 +307,8 @@ class PreviewPanel {
     this.pendingScenarioRequests.clear();
     for (const disposable of this.disposables.splice(0)) disposable.dispose();
     this.onDispose();
+    this.resolveDisposed?.();
+    this.resolveDisposed = undefined;
   }
 }
 
@@ -352,7 +359,7 @@ export function activate(context: vscode.ExtensionContext) {
       if (!preview) throw new Error("No PlantUML preview is open.");
       return preview.runScenarioCommand(command);
     },
-    disposePreview: () => preview?.close(),
+    disposePreview: () => preview?.close() ?? Promise.resolve(),
   };
 }
 

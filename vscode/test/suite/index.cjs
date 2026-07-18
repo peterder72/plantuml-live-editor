@@ -126,11 +126,8 @@ async function run() {
     "the preview is no longer associated with the first document",
   );
 
-  extensionApi.disposePreview();
-  await waitFor(
-    () => extensionApi.getPreviewCount() === 0,
-    "the followed preview panel to dispose",
-  );
+  await extensionApi.disposePreview();
+  assert.equal(extensionApi.getPreviewCount(), 0, "the followed preview panel disposes");
   assert.equal(
     vscode.window.activeTextEditor?.document.uri.toString(),
     secondSourceUri.toString(),
@@ -146,11 +143,8 @@ async function run() {
     );
   }, "the second document preview to render after being reopened");
 
-  extensionApi.disposePreview();
-  await waitFor(
-    () => extensionApi.getPreviewCount() === 0,
-    "the preview panel to dispose",
-  );
+  await extensionApi.disposePreview();
+  assert.equal(extensionApi.getPreviewCount(), 0, "the preview panel disposes");
   await deleteTemporaryFile(sourceUri);
   await deleteTemporaryFile(secondSourceUri);
   await deleteTemporaryFile(unsupportedUri);

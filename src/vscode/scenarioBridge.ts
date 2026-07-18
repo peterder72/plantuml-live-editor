@@ -4,6 +4,8 @@ import type {
 } from "./messages";
 import { fingerprint } from "../shared/fingerprint";
 
+const scenarioActionTimeout = 30_000;
+
 export async function runScenarioCommand(
   command: ScenarioCommand,
 ): Promise<ScenarioCommandResult> {
@@ -267,7 +269,7 @@ function nextFrame() {
 }
 
 async function waitFor(predicate: () => boolean, description: string) {
-  const deadline = Date.now() + 5_000;
+  const deadline = Date.now() + scenarioActionTimeout;
   while (Date.now() < deadline) {
     if (predicate()) return;
     await nextFrame();

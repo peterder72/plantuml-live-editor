@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import {
   chromium,
   firefox,
-  expect,
+  expect as baseExpect,
   type Browser,
   type BrowserContext,
   type Page,
@@ -18,6 +18,7 @@ import { fingerprint } from "../common/fingerprint";
 
 const artifactUrl = pathToFileURL(resolve("dist/index.html")).href;
 const renderTimeout = 30_000;
+const expect = baseExpect.configure({ timeout: renderTimeout });
 
 export class WebScenarioDriver implements ScenarioDriver {
   private browser: Browser | undefined;

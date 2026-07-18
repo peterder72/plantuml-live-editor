@@ -4,5 +4,5 @@ import { runIsolatedVSCodeTests } from "./run-isolated-vscode-tests";
 await runIsolatedVSCodeTests({
   extensionDevelopmentPath: resolve("vscode"),
   extensionTestsPath: resolve(".scenario-dist/vscode-runner.cjs"),
-  launchArgs: ["--disable-extensions"],
+  diagnosticsName: "scenarios",
 });
