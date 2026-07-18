@@ -1,27 +1,27 @@
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { downloadAndUnzipVSCode, runTests } from "@vscode/test-electron";
+import { runTests } from "@vscode/test-electron";
 
 interface IsolatedVSCodeTestOptions {
   extensionDevelopmentPath: string;
   extensionTestsPath: string;
   launchArgs?: string[];
-  version?: string;
   diagnosticsName: string;
 }
 
-const DEFAULT_VSCODE_TEST_VERSION = (
-  await readFile(resolve(".vscode-test-version"), "utf8")
-).trim();
-const DOWNLOAD_ATTEMPTS = 3;
-const DOWNLOAD_IDLE_TIMEOUT = 60_000;
+const vscodeExecutablePath = process.env.VSCODE_TEST_EXECUTABLE_PATH;
+
+if (!vscodeExecutablePath) {
+  throw new Error(
+    "VSCODE_TEST_EXECUTABLE_PATH is missing. Run VS Code tests through the package scripts so the pinned runtime is prepared first.",
+  );
+}
 
 export async function runIsolatedVSCodeTests({
   extensionDevelopmentPath,
   extensionTestsPath,
   launchArgs = [],
-  version = DEFAULT_VSCODE_TEST_VERSION,
   diagnosticsName,
 }: IsolatedVSCodeTestOptions) {
   // VS Code creates a Unix socket below user-data-dir. macOS's default temporary
@@ -46,7 +46,6 @@ export async function runIsolatedVSCodeTests({
         "workbench.startupEditor": "none",
       }),
     );
-    const vscodeExecutablePath = await downloadVSCode(version);
     await runTests({
       extensionDevelopmentPath,
       extensionTestsPath,
@@ -69,28 +68,6 @@ export async function runIsolatedVSCodeTests({
   } finally {
     await rm(profileRoot, { recursive: true, force: true });
   }
-}
-
-async function downloadVSCode(version: string) {
-  let lastError: unknown;
-  for (let attempt = 1; attempt <= DOWNLOAD_ATTEMPTS; attempt += 1) {
-    try {
-      return await downloadAndUnzipVSCode({
-        version,
-        timeout: DOWNLOAD_IDLE_TIMEOUT,
-      });
-    } catch (error) {
-      lastError = error;
-      if (attempt === DOWNLOAD_ATTEMPTS) break;
-      console.warn(
-        `VS Code ${version} download attempt ${attempt} failed; retrying download only.`,
-      );
-      await new Promise((resolvePromise) =>
-        setTimeout(resolvePromise, attempt * 1_000),
-      );
-    }
-  }
-  throw lastError;
 }
 
 async function preserveDiagnostics(userDataDir: string, diagnosticsName: string) {
