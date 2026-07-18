@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.4
+
+- Improved VS Code test runtime provisioning and CI reliability.
+
 ## 0.3.3
 
 - Improved export menu
