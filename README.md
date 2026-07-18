@@ -35,6 +35,11 @@ bunx playwright install chromium firefox
 bun run test:all
 ```
 
+VS Code tests provision the version pinned in `.vscode-test-version` in a
+separate Node process before starting the Bun test runner. Keep that provisioning
+boundary intact: a recovered archive-download failure must not affect the test
+process's exit status.
+
 On headless Linux, provide a virtual display for the VS Code Extension Host:
 
 ```sh
