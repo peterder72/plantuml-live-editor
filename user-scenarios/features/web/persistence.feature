@@ -11,3 +11,14 @@ Feature: Keep standalone work in browser storage
     When I reload the offline application
     Then the editor contains that PlantUML source
     And the diagram contains "PersistedSource"
+
+  Scenario: Persist the resized editor and preview split across reload
+    Given I have opened the application with this PlantUML source:
+      """
+      @startuml
+      component PersistedSplit
+      @enduml
+      """
+    When I resize the editor and preview
+    And I reload the offline application
+    Then the resized editor and preview split is restored

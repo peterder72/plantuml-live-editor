@@ -28,3 +28,14 @@ When("I fold and unfold the nested source", async function (this: ScenarioWorld)
 When("I reload the offline application", async function (this: ScenarioWorld) {
   await driver(this).reload();
 });
+
+When("I resize the editor and preview", async function (this: ScenarioWorld) {
+  await driver(this).resizeEditorAndPreview();
+});
+
+Then(
+  "the resized editor and preview split is restored",
+  async function (this: ScenarioWorld) {
+    await driver(this).expectEditorAndPreviewSplitRestored();
+  },
+);

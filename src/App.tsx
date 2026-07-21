@@ -1,22 +1,20 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { AppHeader } from "./components/AppHeader";
 import { EditorPanel } from "./editor/EditorPanel";
 import { PreviewPanel } from "./preview/PreviewPanel";
 import { useDiagramRenderer } from "./rendering/useDiagramRenderer";
 import { toggleHiddenMembers } from "./rendering/classMemberVisibility";
 import { useEditorState } from "./state/useEditorState";
-
-const MIN_SPLIT_PERCENT = 25;
-const MAX_SPLIT_PERCENT = 75;
-
-function clampSplitPercent(value: number) {
-  return Math.min(MAX_SPLIT_PERCENT, Math.max(MIN_SPLIT_PERCENT, value));
-}
+import {
+  MAX_SPLIT_PERCENT,
+  MIN_SPLIT_PERCENT,
+  useSplitPosition,
+} from "./state/useSplitPosition";
 
 export default function App() {
   const { source, setSource } = useEditorState();
   const { svg, renderRevision, status } = useDiagramRenderer(source);
-  const [splitPercent, setSplitPercent] = useState(50);
+  const { splitPercent, setSplitPercent } = useSplitPosition();
   const shellRef = useRef<HTMLDivElement>(null);
 
   const resizeTo = (clientX: number) => {
@@ -24,7 +22,7 @@ export default function App() {
     if (!shell || window.matchMedia("(max-width: 800px)").matches) return;
     const rect = shell.getBoundingClientRect();
     const next = ((clientX - rect.left) / rect.width) * 100;
-    setSplitPercent(clampSplitPercent(next));
+    setSplitPercent(next);
   };
 
   return (
@@ -64,7 +62,7 @@ export default function App() {
             const next = nextValues[event.key];
             if (next === undefined) return;
             event.preventDefault();
-            setSplitPercent(clampSplitPercent(next));
+            setSplitPercent(next);
           }}
         >
           <span />

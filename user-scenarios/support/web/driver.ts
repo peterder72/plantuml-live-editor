@@ -28,6 +28,7 @@ export class WebScenarioDriver implements ScenarioDriver {
   private readonly egressAttempts: string[] = [];
   private rememberedTransform: string | null = null;
   private rememberedWidth: string | null = null;
+  private rememberedSplitPercent: string | null = null;
 
   constructor(private readonly browserName: "chromium" | "firefox") {}
 
@@ -288,6 +289,28 @@ export class WebScenarioDriver implements ScenarioDriver {
     await this.requirePage()
       .locator(".diagram-content svg")
       .waitFor({ state: "visible", timeout: renderTimeout });
+  }
+
+  async resizeEditorAndPreview() {
+    const separator = this.requirePage().getByRole("separator", {
+      name: "Resize editor and preview",
+    });
+    await separator.press("End");
+    await expect(separator).toHaveAttribute("aria-valuenow", "75");
+    this.rememberedSplitPercent = await separator.getAttribute("aria-valuenow");
+  }
+
+  async expectEditorAndPreviewSplitRestored() {
+    assert.notEqual(
+      this.rememberedSplitPercent,
+      null,
+      "No editor and preview split position was remembered.",
+    );
+    await expect(
+      this.requirePage().getByRole("separator", {
+        name: "Resize editor and preview",
+      }),
+    ).toHaveAttribute("aria-valuenow", this.rememberedSplitPercent ?? "");
   }
 
   async expectNetworkApisBlocked() {
