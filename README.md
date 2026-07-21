@@ -4,6 +4,9 @@ A private, fully client-side PlantUML editor inspired by Mermaid Live Editor.
 Source is edited with CodeMirror and rendered as SVG by PlantUML's official
 TeaVM browser engine. Graphviz WASM is embedded in the final HTML.
 
+A public instance is available at
+[peterder72.github.io/plantuml-live-editor](https://peterder72.github.io/plantuml-live-editor/).
+
 ## Prerequisites
 
 Install [Bun](https://bun.sh/):
@@ -76,9 +79,11 @@ bun run test:scenarios:vscode
 ```
 
 GitHub Actions uses Bun 1.3.14 and runs the quality, web, and VS Code suites on
-every pull request and push to `main`. A `main` build is deployed to GitHub
-Pages only after all three jobs pass. Failure diagnostics are retained as
-workflow artifacts.
+every pull request, push to `main`, and `v*` version tag. A version-tag build is
+deployed to GitHub Pages only after all three jobs pass. The VS Code Marketplace
+publication and GitHub release are then handled by independent jobs, with the
+release reusing the artifacts built by the tested web and VS Code jobs. Failure
+diagnostics are retained as workflow artifacts.
 
 Unit tests continue to own sanitizer details, transform math, stale-render
 algorithms, and source-rewrite edge cases. Common Gherkin scenarios and the

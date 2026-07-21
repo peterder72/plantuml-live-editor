@@ -81,6 +81,22 @@ jobs:
       - name: Run web Cucumber scenarios in Playwright
         run: bun run test:scenarios:web:prepared
 
+      - name: Stage web release artifact
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          release_version="${GITHUB_REF_NAME#v}"
+          mkdir -p release
+          cp dist/index.html "release/plantuml-live-editor-${release_version}.html"
+
+      - name: Upload web release artifact
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v6
+        with:
+          name: release-html
+          path: release/*.html
+          if-no-files-found: error
+
       - name: Upload web test diagnostics
         if: failure()
         uses: actions/upload-artifact@v6
@@ -92,7 +108,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Upload GitHub Pages artifact
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
@@ -134,6 +150,24 @@ jobs:
       - name: Run VS Code Cucumber scenarios
         run: dbus-run-session -- xvfb-run -a -s "-screen 0 1440x900x24" bun run test:scenarios:vscode:prepared
 
+      - name: Package VS Code release artifact
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          release_version="${GITHUB_REF_NAME#v}"
+          mkdir -p release
+          cd vscode
+          bunx vsce package --no-dependencies \
+            --out "../release/plantuml-live-editor-${release_version}.vsix"
+
+      - name: Upload VS Code release artifact
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v6
+        with:
+          name: release-vsix
+          path: release/*.vsix
+          if-no-files-found: error
+
       - name: Upload VS Code test diagnostics
         if: failure()
         uses: actions/upload-artifact@v6
@@ -145,7 +179,7 @@ jobs:
 
   deploy:
     name: Deploy GitHub Pages
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -203,3 +237,51 @@ jobs:
 
       - name: Publish VS Code extension
         run: bun run publish:vscode
+
+  create-release:
+    name: Create GitHub release
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    needs:
+      - quality
+      - web
+      - vscode
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Verify release tag matches package versions
+        shell: bash
+        run: |
+          release_version="${GITHUB_REF_NAME#v}"
+          root_version="$(node -p 'require("./package.json").version')"
+          extension_version="$(node -p 'require("./vscode/package.json").version')"
+          test "$release_version" = "$root_version"
+          test "$release_version" = "$extension_version"
+
+      - name: Download web release artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: release-html
+          path: release
+
+      - name: Download VS Code release artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: release-vsix
+          path: release
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          release_version="${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" \
+            "release/plantuml-live-editor-${release_version}.html" \
+            "release/plantuml-live-editor-${release_version}.vsix" \
+            --verify-tag \
+            --generate-notes
