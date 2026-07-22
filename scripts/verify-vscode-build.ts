@@ -1,6 +1,10 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 import { listFiles, PackageManager } from "@vscode/vsce";
+import {
+  loadChangelog,
+  renderChangelogMarkdown,
+} from "./changelog";
 
 const extensionPath = resolve("vscode/dist/extension.cjs");
 const webviewPath = resolve("vscode/dist/webview/webview.js");
@@ -22,6 +26,8 @@ const [
   grammarText,
   languageConfigurationText,
   grammarLicenseText,
+  extensionChangelog,
+  changelog,
 ] =
   await Promise.all([
     readFile(extensionPath, "utf8"),
@@ -35,6 +41,8 @@ const [
     readFile(grammarPath, "utf8"),
     readFile(languageConfigurationPath, "utf8"),
     readFile(grammarLicensePath, "utf8"),
+    readFile(resolve("vscode/CHANGELOG.md"), "utf8"),
+    loadChangelog(),
   ]);
 
 const rootManifest = JSON.parse(rootManifestText) as { version?: string };
@@ -68,6 +76,14 @@ if (extensionManifest.version !== rootManifest.version) {
   throw new Error(
     `Extension version ${extensionManifest.version} does not match root version ${rootManifest.version}.`,
   );
+}
+if (changelog.releases[0].version !== rootManifest.version) {
+  throw new Error(
+    `Latest changelog version ${changelog.releases[0].version} does not match root version ${String(rootManifest.version)}.`,
+  );
+}
+if (extensionChangelog !== renderChangelogMarkdown(changelog)) {
+  throw new Error("VS Code changelog is not synchronized with CHANGELOG.json.");
 }
 
 const requiredMetadata: Array<[string, unknown]> = [

@@ -70,12 +70,166 @@ button {
   letter-spacing: 0.01em;
 }
 
-.brand span {
-  display: block;
+.brand-meta {
+  display: flex;
+  align-items: center;
   margin-top: 2px;
+  gap: 7px;
+}
+
+.app-version,
+.changelog-trigger {
   color: #738293;
   font-size: 10px;
   letter-spacing: 0.04em;
+}
+
+.changelog-trigger {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: #435160;
+  text-underline-offset: 2px;
+  transition: color 120ms ease;
+}
+
+.changelog-trigger:hover {
+  color: #b7c4d1;
+}
+
+.changelog-trigger:focus-visible {
+  color: #dce5ef;
+  border-radius: 2px;
+  outline: 2px solid #54d6a9;
+  outline-offset: 2px;
+}
+
+.changelog-backdrop {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(3 7 11 / 72%);
+  backdrop-filter: blur(4px);
+}
+
+.changelog-modal {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(600px, 100%);
+  max-height: min(700px, calc(100vh - 48px));
+  overflow: hidden;
+  border: 1px solid #2c3946;
+  border-radius: 14px;
+  background: #111820;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 48%);
+}
+
+.changelog-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 22px 17px;
+  border-bottom: 1px solid #25303c;
+}
+
+.changelog-modal-eyebrow {
+  margin-bottom: 4px;
+  color: #54d6a9;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.changelog-modal h2 {
+  margin: 0;
+  color: #f2f7fb;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+
+.changelog-close {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  color: #8190a0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.changelog-close:hover {
+  color: #f2f7fb;
+  border-color: #2c3946;
+  background: #1a232d;
+}
+
+.changelog-close:focus-visible {
+  color: #f2f7fb;
+  outline: 2px solid #54d6a9;
+  outline-offset: 2px;
+}
+
+.changelog-releases {
+  overflow: auto;
+  padding: 4px 22px 22px;
+}
+
+.changelog-release {
+  padding: 18px 0;
+  border-bottom: 1px solid #202a35;
+}
+
+.changelog-release:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.changelog-release-heading {
+  display: flex;
+  align-items: center;
+  margin-bottom: 9px;
+  gap: 9px;
+}
+
+.changelog-release h3 {
+  margin: 0;
+  color: #dce5ef;
+  font-size: 13px;
+}
+
+.changelog-release-heading span {
+  padding: 2px 6px;
+  color: #70dbb9;
+  border: 1px solid #295646;
+  border-radius: 999px;
+  background: #122a24;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.changelog-release ul {
+  display: grid;
+  margin: 0;
+  padding-left: 18px;
+  gap: 7px;
+  color: #9ba9b8;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.changelog-release li::marker {
+  color: #54d6a9;
 }
 
 .header-actions {
@@ -898,9 +1052,17 @@ button {
     height: 2px;
   }
 
-  .interaction-hint,
-  .brand span {
+  .interaction-hint {
     display: none;
+  }
+
+  .changelog-backdrop {
+    align-items: end;
+    padding: 12px;
+  }
+
+  .changelog-modal {
+    max-height: calc(100vh - 24px);
   }
 
   .live-toggle-card {
