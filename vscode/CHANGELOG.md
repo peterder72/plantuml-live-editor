@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.6
+
+- Allowed URL-like text and comments while continuing to block PlantUML
+  directives that can load external resources.
+
 ## 0.3.4
 
 - Improved VS Code test runtime provisioning and CI reliability.

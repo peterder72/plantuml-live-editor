@@ -2,7 +2,7 @@
   "name": "plantuml-live-editor",
   "displayName": "PlantUML Live Editor",
   "description": "Private, offline PlantUML preview with live flags, named views, pan, zoom, and SVG/PNG export.",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "publisher": "peterder72",
   "license": "SEE LICENSE IN LICENSE",
   "icon": "images/icon.png",

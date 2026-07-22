@@ -77,15 +77,18 @@ describe("assertOfflineSource", () => {
     "!include https://example.test/private.puml",
     "!includeurl http://127.0.0.1/private",
     "!theme spacelab from https://example.test",
-    "Alice -> Bob : javascript:alert(1)",
-    "rectangle R << //example.test/secret >>",
+    "sprite $icon https://example.test/icon.svg",
+    "skinparam backgroundImage file:/tmp/background.png",
   ])("rejects network-capable source: %s", (source) => {
     expect(() => assertOfflineSource(source)).toThrow(/disabled for privacy/);
   });
 
-  it("accepts an ordinary offline diagram", () => {
-    expect(() =>
-      assertOfflineSource("@startuml\nAlice -> Bob : Hello\n@enduml"),
-    ).not.toThrow();
+  it.each([
+    "@startuml\nAlice -> Bob : Hello\n@enduml",
+    "@startuml\n' See https://example.test/docs\nAlice -> Bob : Hello\n@enduml",
+    "@startuml\nAlice -> Bob : javascript:alert(1)\n@enduml",
+    "@startuml\nrectangle R << //example.test/secret >>\n@enduml",
+  ])("accepts ordinary text and comments: %s", (source) => {
+    expect(() => assertOfflineSource(source)).not.toThrow();
   });
 });

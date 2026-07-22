@@ -58,10 +58,6 @@ const FORBIDDEN_SOURCE_PATTERNS: Array<[RegExp, string]> = [
     "Includes, imports, and external themes are disabled for privacy.",
   ],
   [
-    /(?:https?|wss?|ftp|file|filesystem|javascript):|(?:^|[\s("'=])\/\//im,
-    "URLs and network resources are disabled for privacy.",
-  ],
-  [
     /^\s*(?:sprite|skinparam)\b[^\n]*(?:url|https?|file:)/im,
     "External sprites and resources are disabled for privacy.",
   ],
