@@ -313,6 +313,36 @@ export class WebScenarioDriver implements ScenarioDriver {
     ).toHaveAttribute("aria-valuenow", this.rememberedSplitPercent ?? "");
   }
 
+  async openChangelog() {
+    const page = this.requirePage();
+    await page.getByRole("button", { name: "Changelog" }).click();
+    await expect(page.getByRole("dialog", { name: "Changelog" })).toBeVisible();
+  }
+
+  async expectChangelogVersion(version: string) {
+    await expect(
+      this.requirePage().getByRole("heading", { name: `Version ${version}` }),
+    ).toBeVisible();
+  }
+
+  async expectChangelogContains(text: string) {
+    await expect(
+      this.requirePage().getByRole("dialog", { name: "Changelog" }),
+    ).toContainText(text);
+  }
+
+  async closeChangelog() {
+    const page = this.requirePage();
+    await page.getByRole("button", { name: "Close changelog" }).click();
+    await expect(page.getByRole("dialog", { name: "Changelog" })).toHaveCount(0);
+  }
+
+  async expectChangelogClosed() {
+    await expect(
+      this.requirePage().getByRole("dialog", { name: "Changelog" }),
+    ).toHaveCount(0);
+  }
+
   async expectNetworkApisBlocked() {
     const results = await this.requirePage().evaluate(async () => {
       const calls = [

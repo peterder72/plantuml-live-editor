@@ -103,9 +103,11 @@ Create an installable VSIX:
 bun run package:vscode
 ```
 
-The root `package.json` is the release-version source of truth. VS Code builds
-synchronize that version into the extension manifest before verification and
-packaging.
+The root `package.json` is the release-version source of truth, and
+`CHANGELOG.json` is the release-history source of truth. VS Code builds
+synchronize the version into the extension manifest and generate
+`vscode/CHANGELOG.md` from the JSON before verification and packaging. Tagged
+GitHub releases use the matching JSON entry as their release notes.
 
 After installing the VSIX, open a PlantUML document and run
 **PlantUML: Open Preview to the Side**. The extension uses VS Code's native text

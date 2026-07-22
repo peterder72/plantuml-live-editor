@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { resolve } from "node:path";
+import { loadChangelog } from "./changelog";
 
 const REQUIRED_CSP_DIRECTIVES = [
   "default-src 'none'",
@@ -27,7 +28,23 @@ if (entries.length !== 1 || entries[0] !== "index.html") {
 }
 
 const htmlPath = resolve(distPath, "index.html");
-const html = await readFile(htmlPath, "utf8");
+const [html, manifestText, changelog] = await Promise.all([
+  readFile(htmlPath, "utf8"),
+  readFile(resolve("package.json"), "utf8"),
+  loadChangelog(),
+]);
+const manifest = JSON.parse(manifestText) as { version?: string };
+const currentRelease = changelog.releases[0];
+if (currentRelease.version !== manifest.version) {
+  throw new Error(
+    `Latest changelog version ${currentRelease.version} does not match package version ${String(manifest.version)}.`,
+  );
+}
+for (const marker of [currentRelease.version, ...currentRelease.changes]) {
+  if (!html.includes(marker)) {
+    throw new Error(`Current changelog content was not found in the web bundle: ${marker}`);
+  }
+}
 const cspMatch = html.match(
   /<meta\s+http-equiv=(["'])Content-Security-Policy\1\s+content=(["'])(.*?)\2/i,
 );

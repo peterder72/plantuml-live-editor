@@ -39,3 +39,29 @@ Then(
     await driver(this).expectEditorAndPreviewSplitRestored();
   },
 );
+
+When("I open the changelog", async function (this: ScenarioWorld) {
+  await driver(this).openChangelog();
+});
+
+Then(
+  "the changelog shows version {string}",
+  async function (this: ScenarioWorld, version: string) {
+    await driver(this).expectChangelogVersion(version);
+  },
+);
+
+Then(
+  "the changelog contains {string}",
+  async function (this: ScenarioWorld, text: string) {
+    await driver(this).expectChangelogContains(text);
+  },
+);
+
+When("I close the changelog", async function (this: ScenarioWorld) {
+  await driver(this).closeChangelog();
+});
+
+Then("the changelog is closed", async function (this: ScenarioWorld) {
+  await driver(this).expectChangelogClosed();
+});

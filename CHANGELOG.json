@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "releases": [
+    {
+      "version": "0.4.0",
+      "changes": [
+        "Centralized release history in CHANGELOG.json for the web app, VS Code extension, and GitHub releases.",
+        "Added a Changelog dialog next to the web app version number."
+      ]
+    },
+    {
+      "version": "0.3.6",
+      "changes": [
+        "Allowed URL-like text and comments while continuing to block PlantUML directives that can load external resources."
+      ]
+    },
+    {
+      "version": "0.3.5",
+      "changes": [
+        "Persisted the editor and preview split position across browser sessions.",
+        "Added automated GitHub release creation while keeping Pages deployments scoped to the main branch."
+      ]
+    },
+    {
+      "version": "0.3.4",
+      "changes": [
+        "Improved VS Code test runtime provisioning and CI reliability."
+      ]
+    },
+    {
+      "version": "0.3.3",
+      "changes": [
+        "Improved the export menu."
+      ]
+    },
+    {
+      "version": "0.3.2",
+      "changes": [
+        "Corrected live-flag wrapper comments to use valid PlantUML block comment syntax."
+      ]
+    },
+    {
+      "version": "0.3.1",
+      "changes": [
+        "Added the live variable name as a PlantUML block comment after !endif when wrapping a selection with a live flag."
+      ]
+    },
+    {
+      "version": "0.3.0",
+      "changes": [
+        "Reused a single preview panel that follows the active PlantUML document.",
+        "Fixed Graphviz-based diagrams failing in VS Code after switching documents because the embedded Viz.js script was blocked by the webview security policy.",
+        "Increased the browser-rendering limit from 4096 × 4096 to 8192 × 8192 pixels.",
+        "Improved recovery from unexpected renderer errors while preserving the last valid diagram."
+      ]
+    },
+    {
+      "version": "0.2.1",
+      "changes": [
+        "Added preprocessor if-statement collapsing in the editor."
+      ]
+    },
+    {
+      "version": "0.2.0",
+      "changes": [
+        "Added native-editor selection wrapping for live flags.",
+        "Added named live-toggle views and class-member visibility toggling.",
+        "Added visible render progress, duration, and error feedback.",
+        "Completed Marketplace metadata and made the root package version canonical."
+      ]
+    },
+    {
+      "version": "0.1.0",
+      "changes": [
+        "Added the offline PlantUML preview with pan, zoom, fit, reset, live boolean toggles, and SVG/PNG export."
+      ]
+    }
+  ]
+}
