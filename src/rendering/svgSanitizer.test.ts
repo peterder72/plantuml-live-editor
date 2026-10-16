@@ -27,6 +27,31 @@ describe("sanitizeSvg", () => {
     expect(result).toContain('fill="url(#local-gradient)"');
   });
 
+  it.each(["onclick=handler", "href=destination", "url(https://example.test)"])(
+    "preserves harmless label text: %s",
+    (label) => {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg"><text>${label}</text></svg>`;
+      expect(() => assertInertSvg(svg)).not.toThrow();
+      expect(sanitizeSvg(svg)).toContain(`<text>${label}</text>`);
+    },
+  );
+
+  it.each([
+    '<rect onclick="handler()"/>',
+    '<rect fill="url(https://example.test/fill)"/>',
+    '<rect style="fill:url(https://example.test/fill)"/>',
+    '<a href="https://example.test"><text>link</text></a>',
+  ])("rejects unsafe DOM content: %s", (content) => {
+    expect(() => assertInertSvg(
+      `<svg xmlns="http://www.w3.org/2000/svg">${content}</svg>`,
+    )).toThrow(/unsafe external SVG resource/);
+  });
+
+  it.each(['<svg', '<html xmlns="http://www.w3.org/1999/xhtml"/>'])(
+    "rejects invalid SVG documents: %s",
+    (svg) => expect(() => assertInertSvg(svg)).toThrow(/invalid SVG/),
+  );
+
   it("rejects externally resolving SVG at the final boundary", () => {
     expect(() =>
       assertInertSvg(

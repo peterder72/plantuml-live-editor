@@ -59,10 +59,19 @@ describe("renderToSvg", () => {
 describe("getPlantUmlDiagnostic", () => {
   it("recognizes PlantUML syntax-error SVG output", () => {
     const svg =
-      '<svg xmlns="http://www.w3.org/2000/svg"><text>[From textarea (line 2)] Syntax Error?</text></svg>';
+      '<svg xmlns="http://www.w3.org/2000/svg"><text>[From textarea (line 2) ]</text><text>Syntax Error? (Assumed diagram type: sequence)</text></svg>';
 
     expect(getPlantUmlDiagnostic(svg)).toBe("Syntax error near line 2.");
   });
+
+  it.each(["Syntax Error?", "Unsupported diagram type", "[From textarea (line 2)]"])(
+    "accepts diagnostic phrases as ordinary labels: %s",
+    (label) => {
+      expect(getPlantUmlDiagnostic(
+        `<svg xmlns="http://www.w3.org/2000/svg"><text>${label}</text></svg>`,
+      )).toBeNull();
+    },
+  );
 
   it("accepts normal diagram SVG output", () => {
     const svg =

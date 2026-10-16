@@ -63,16 +63,30 @@ export function sanitizeSvg(svg: string): string {
 }
 
 export function assertInertSvg(svg: string): void {
-  const lower = svg.toLowerCase();
+  const document = new DOMParser().parseFromString(svg, "image/svg+xml");
   if (
-    /<(?:a|script|style|image|use|foreignobject|iframe|object|embed|audio|video)\b/.test(
-      lower,
-    ) ||
-    /\b(?:href|xlink:href|src)\s*=/.test(lower) ||
-    /\bon[a-z]+\s*=/.test(lower) ||
-    hasExternalUrlFunction(svg)
+    document.querySelector("parsererror") ||
+    document.documentElement.localName !== "svg" ||
+    document.documentElement.namespaceURI !== "http://www.w3.org/2000/svg"
   ) {
-    throw new Error("The diagram contains an unsafe external SVG resource.");
+    throw new Error("PlantUML produced invalid SVG.");
+  }
+
+  const forbiddenTags = new Set(FORBIDDEN_SVG_TAGS.map((tag) => tag.toLowerCase()));
+  for (const element of document.querySelectorAll("*")) {
+    if (
+      forbiddenTags.has(element.localName.toLowerCase()) ||
+      Array.from(element.attributes).some((attribute) => {
+        const name = attribute.name.toLowerCase();
+        return (
+          URL_ATTRIBUTE_NAMES.has(name) ||
+          name.startsWith("on") ||
+          hasExternalUrlFunction(attribute.value)
+        );
+      })
+    ) {
+      throw new Error("The diagram contains an unsafe external SVG resource.");
+    }
   }
 }
 

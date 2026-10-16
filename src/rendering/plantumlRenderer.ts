@@ -140,17 +140,16 @@ export function assertOfflineSource(source: string): void {
 
 export function getPlantUmlDiagnostic(svg: string): string | null {
   const parsed = new DOMParser().parseFromString(svg, "image/svg+xml");
-  const text = parsed.documentElement.textContent?.replace(/\s+/g, " ").trim();
-  if (!text) return null;
-
-  const syntaxErrorIndex = text.search(/Syntax Error\?/i);
-  if (syntaxErrorIndex >= 0) {
-    const line = text.match(/\[From [^\]]*?\(line\s+(\d+)\)/i)?.[1];
-    return line ? `Syntax error near line ${line}.` : "PlantUML syntax error.";
-  }
-
-  if (/Unsupported diagram type/i.test(text)) {
-    return "Unsupported diagram type.";
+  const labels = Array.from(parsed.querySelectorAll("text"), (element) =>
+    element.textContent?.replace(/\s+/g, " ").trim() ?? "",
+  );
+  // Error SVGs contain a source-location header and a separate diagnostic.
+  // Unsupported diagrams are reported through the engine's error callback.
+  const location = labels
+    .map((label) => /^\[From .+?\(line\s+(\d+)\)\s*\]$/i.exec(label))
+    .find((match) => match !== null);
+  if (location && labels.some((label) => /^Syntax Error\?(?:\s|$)/i.test(label))) {
+    return `Syntax error near line ${location[1]}.`;
   }
 
   return null;

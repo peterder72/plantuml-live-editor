@@ -52,6 +52,15 @@ describe("setLiveToggleValue", () => {
     );
   });
 
+  it.each(["true", "false"])("preserves names containing the literal %s", (literal) => {
+    const name = `_live_${literal}_alarm`;
+    const source = `\t!$${name}  =  ${literal} ' keep ${literal}\r\n`;
+
+    expect(setLiveToggleValue(source, name, literal !== "true")).toBe(
+      `\t!$${name}  =  %${literal === "true" ? "false" : "true"}() ' keep ${literal}\r\n`,
+    );
+  });
+
   it("reads legacy literals and normalizes them to PlantUML functions", () => {
     const source = "!$_live_ENABLED = true\n!$_live_DISABLED = false";
 
