@@ -11,12 +11,15 @@ or `github.dev`.
 ## Usage
 
 1. Open a `.puml`, `.plantuml`, `.pu`, `.iuml`, or `.wsd` document.
-2. Run **PlantUML: Open Preview to the Side** from the Command Palette, or use
-   the preview button in the editor title.
-3. Keep editing in VS Code's native editor. The preview updates automatically.
+2. Use the automatically revealed **PlantUML Controls** view below the File
+   Explorer to manage live flags, named views, and wrapping selected source.
+3. Choose **Open Preview** in that view, run **PlantUML: Open Preview to the
+   Side**, or use the preview button in the editor title.
+4. Keep editing in VS Code's native editor. The preview updates automatically.
 
-Each document gets one reusable preview panel. Invalid edits show an error
-without discarding the last valid diagram.
+The extension keeps one reusable preview panel and one controls view following
+the most recently active PlantUML document. Invalid edits show an error without
+discarding the last valid diagram.
 
 ## Features
 
@@ -24,9 +27,10 @@ without discarding the last valid diagram.
   auto-closing behavior for every supported file extension.
 - Offline class, component, sequence, activity, and other diagrams supported by
   PlantUML's MIT browser engine.
-- Pointer-centered wheel zoom, touch pinch zoom, drag-to-pan, fit, and reset.
+- Pointer-centered wheel zoom, touch pinch zoom, drag-to-pan, zoom, fit, and
+  reset directly in the preview.
 - Persistent viewport position across ordinary rerenders.
-- SVG and PNG export.
+- SVG and PNG export from the preview canvas.
 - Click a rendered class to add or remove its `hide <name> members` directive.
 - Live boolean flags declared as `!$_live_NAME = %false()` or `%true()`.
 - Create and rename named flag views, with independent values stored safely in

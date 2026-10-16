@@ -9,6 +9,8 @@ import {
 const extensionPath = resolve("vscode/dist/extension.cjs");
 const webviewPath = resolve("vscode/dist/webview/webview.js");
 const stylePath = resolve("vscode/dist/webview/style.css");
+const controlsPath = resolve("vscode/dist/controls/controls.js");
+const controlsStylePath = resolve("vscode/dist/controls/style.css");
 const iconPath = resolve("vscode/images/icon.png");
 const grammarPath = resolve("vscode/syntaxes/plantuml.tmLanguage.json");
 const languageConfigurationPath = resolve("vscode/language-configuration.json");
@@ -20,6 +22,9 @@ const [
   extensionStats,
   webviewStats,
   styleStats,
+  controls,
+  controlsStats,
+  controlsStyleStats,
   rootManifestText,
   extensionManifestText,
   icon,
@@ -35,6 +40,9 @@ const [
     stat(extensionPath),
     stat(webviewPath),
     stat(stylePath),
+    readFile(controlsPath, "utf8"),
+    stat(controlsPath),
+    stat(controlsStylePath),
     readFile(resolve("package.json"), "utf8"),
     readFile(resolve("vscode/package.json"), "utf8"),
     readFile(iconPath),
@@ -69,6 +77,14 @@ const extensionManifest = JSON.parse(extensionManifestText) as {
       scopeName?: string;
       path?: string;
     }>;
+    views?: {
+      explorer?: Array<{
+        id?: string;
+        name?: string;
+        type?: string;
+        visibility?: string;
+      }>;
+    };
   };
 };
 
@@ -145,6 +161,17 @@ if (
   plantUmlGrammar.path !== "./syntaxes/plantuml.tmLanguage.json"
 ) {
   throw new Error("Extension manifest has an invalid PlantUML grammar contribution.");
+}
+
+const controlsView = extensionManifest.contributes?.views?.explorer?.find(
+  (view) => view.id === "plantumlLive.controls",
+);
+if (
+  controlsView?.name !== "PlantUML Controls" ||
+  controlsView.type !== "webview" ||
+  controlsView.visibility !== "visible"
+) {
+  throw new Error("Extension manifest has an invalid Explorer controls view.");
 }
 
 const grammar = JSON.parse(grammarText) as {
@@ -245,6 +272,8 @@ if (
 
 for (const marker of [
   "plantumlLive.openPreview",
+  "plantumlLive.controls",
+  "registerWebviewViewProvider",
   "retainContextWhenHidden",
   "Content-Security-Policy",
   "wasm-unsafe-eval",
@@ -258,11 +287,41 @@ for (const marker of [
 }
 
 for (const marker of [
+  "Open Preview",
+  "Active view",
+  "Wrap selection with",
+  "Live toggles",
+  "previewAvailability",
+]) {
+  if (!controls.includes(marker)) {
+    throw new Error(`Controls bundle is missing: ${marker}`);
+  }
+}
+
+for (const marker of [
+  "Diagram view",
+  "Maximum diagram size: 8192",
+  "previewAction",
+  "diagramSnapshot",
+]) {
+  if (controls.includes(marker)) {
+    throw new Error(`Controls bundle unexpectedly contains diagram chrome: ${marker}`);
+  }
+}
+
+if (controls.includes("wasm-unsafe-eval")) {
+  throw new Error("Controls bundle unexpectedly enables WebAssembly evaluation.");
+}
+
+for (const marker of [
   "data:application/octet-stream;base64,",
   "Includes, imports, and external themes are disabled for privacy.",
   "unsafe external SVG resource",
   "Network access is disabled by PlantUML Live Editor",
   "selectionAfter",
+  "Scroll to zoom",
+  "Max 8192",
+  "Export diagram",
 ]) {
   if (!webview.includes(marker)) {
     throw new Error(`Webview bundle is missing: ${marker}`);
@@ -284,6 +343,8 @@ const distFiles = (await readdir(resolve("vscode/dist"), {
   })
   .sort();
 const expectedDistFiles = [
+  "controls/controls.js",
+  "controls/style.css",
   "extension.cjs",
   "webview/style.css",
   "webview/webview.js",
@@ -297,6 +358,8 @@ console.log(
     "Verified VS Code build:",
     `extension ${(extensionStats.size / 1024).toFixed(1)} KiB,`,
     `webview ${(webviewStats.size / 1024 / 1024).toFixed(2)} MiB,`,
-    `styles ${(styleStats.size / 1024).toFixed(1)} KiB`,
+    `styles ${(styleStats.size / 1024).toFixed(1)} KiB,`,
+    `controls ${(controlsStats.size / 1024).toFixed(1)} KiB,`,
+    `controls styles ${(controlsStyleStats.size / 1024).toFixed(1)} KiB`,
   ].join(" "),
 );

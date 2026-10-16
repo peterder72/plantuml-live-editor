@@ -12,16 +12,25 @@ import {
 interface DiagramExportMenuProps {
   svg: string;
   sourceFileName: string;
+  initialFormat?: ExportFormat;
+  initialBackground?: ExportBackground;
+  onOptionsChange?: (options: {
+    format: ExportFormat;
+    background: ExportBackground;
+  }) => void;
 }
 
 export function DiagramExportMenu({
   svg,
   sourceFileName,
+  initialFormat = "png",
+  initialBackground = "transparent",
+  onOptionsChange,
 }: DiagramExportMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [format, setFormat] = useState<ExportFormat>("png");
+  const [format, setFormat] = useState<ExportFormat>(initialFormat);
   const [background, setBackground] =
-    useState<ExportBackground>("transparent");
+    useState<ExportBackground>(initialBackground);
   const [isWorking, setIsWorking] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [error, setError] = useState("");
@@ -29,6 +38,10 @@ export function DiagramExportMenu({
   const dialogRef = useRef<HTMLDivElement>(null);
   const dialogId = useId();
   const fileName = deriveExportFileName(sourceFileName, format);
+
+  useEffect(() => {
+    onOptionsChange?.({ format, background });
+  }, [background, format, onOptionsChange]);
 
   useEffect(() => {
     if (!isOpen) return;

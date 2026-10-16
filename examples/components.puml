@@ -1,0 +1,18 @@
+@startuml
+' Toggle CACHE to compare the architecture with and without caching.
+!$_live_CACHE = %true()
+title Offline application architecture
+package Browser {
+  [Editor] as editor
+  [Preview] as preview
+  [PlantUML TeaVM] as engine
+  [Graphviz WASM] as graphviz
+  editor --> preview : source
+  preview --> engine : render
+  engine --> graphviz : layout
+  !if $_live_CACHE
+  database "Local cache" as cache
+  preview --> cache : last valid SVG
+  !endif
+}
+@enduml

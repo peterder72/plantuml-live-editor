@@ -11,13 +11,13 @@ describe("AppHeader", () => {
     );
     const trigger = screen.getByRole("button", { name: "Changelog" });
 
-    expect(screen.getByText("v0.4.0")).toBeInTheDocument();
+    expect(screen.getByText("v0.5.0")).toBeInTheDocument();
     fireEvent.click(trigger);
 
     expect(screen.getByRole("dialog", { name: "Changelog" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Version 0.4.0" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Version 0.5.0" })).toBeInTheDocument();
     expect(
-      screen.getByText(/Centralized release history in CHANGELOG.json/),
+      screen.getByText(/compact, scrollable PlantUML Controls view/),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Close changelog" })).toHaveFocus();
 

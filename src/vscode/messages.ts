@@ -1,5 +1,7 @@
 import type { SourceSelection } from "../liveToggles/liveToggleWrap";
 
+export type WebviewSurface = "preview" | "controls";
+
 export interface DocumentStateMessage {
   type: "documentState";
   documentUri: string;
@@ -35,6 +37,10 @@ export interface ScenarioCommandResult {
   exportFormat: string;
   exportBackground: string;
   networkApisBlocked?: boolean;
+  previewChromeVisible?: boolean;
+  previewStatusVisible?: boolean;
+  controlsVisible?: boolean;
+  controlsDiagramChromeVisible?: boolean;
 }
 
 export interface ScenarioCommandMessage {
@@ -60,10 +66,6 @@ export interface RenderStatusMessage {
   svgFingerprint: string;
 }
 
-export interface ReadyMessage {
-  type: "ready";
-}
-
 export interface ReplaceSourceMessage {
   type: "replaceSource";
   documentUri: string;
@@ -85,14 +87,47 @@ export interface ShowErrorMessage {
   message: string;
 }
 
-export type ExtensionToWebviewMessage =
+export interface ReadyMessage {
+  type: "ready";
+  surface: WebviewSurface;
+}
+
+export interface OpenPreviewMessage {
+  type: "openPreview";
+}
+
+export interface PreviewAvailabilityMessage {
+  type: "previewAvailability";
+  available: boolean;
+}
+
+export type ExtensionToPreviewMessage =
   | DocumentStateMessage
   | ShowErrorMessage
   | ScenarioCommandMessage;
 
-export type WebviewToExtensionMessage =
+export type ExtensionToControlsMessage =
+  | DocumentStateMessage
+  | ScenarioCommandMessage
+  | PreviewAvailabilityMessage;
+
+export type PreviewToExtensionMessage =
   | ReadyMessage
   | ReplaceSourceMessage
   | RenderedMessage
   | RenderStatusMessage
   | ScenarioResultMessage;
+
+export type ControlsToExtensionMessage =
+  | ReadyMessage
+  | ReplaceSourceMessage
+  | ScenarioResultMessage
+  | OpenPreviewMessage;
+
+export type ExtensionToWebviewMessage =
+  | ExtensionToPreviewMessage
+  | ExtensionToControlsMessage;
+
+export type WebviewToExtensionMessage =
+  | PreviewToExtensionMessage
+  | ControlsToExtensionMessage;

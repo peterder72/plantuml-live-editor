@@ -41,6 +41,12 @@ interface ExtensionTestApi {
   getPreviewState(uri: string): PreviewState | undefined;
   runPreviewScenario(command: ScenarioCommand): Promise<ScenarioCommandResult>;
   disposePreview(): Promise<void>;
+  getControlsState(): {
+    ready: boolean;
+    visible: boolean;
+    documentUri?: string;
+    previewAvailable: boolean;
+  };
 }
 
 export class VsCodeScenarioDriver implements ScenarioDriver {
@@ -68,6 +74,18 @@ export class VsCodeScenarioDriver implements ScenarioDriver {
     );
     this.document = await vscode.workspace.openTextDocument(this.sourceUri);
     this.editor = await vscode.window.showTextDocument(this.document);
+
+    await waitFor(
+      () => {
+        const controls = this.extensionApi?.getControlsState();
+        return Boolean(
+          controls?.ready &&
+            controls.visible &&
+            controls.documentUri === this.sourceUri?.toString(),
+        );
+      },
+      "the Explorer controls to follow the PlantUML document",
+    );
 
     await vscode.commands.executeCommand(previewCommand);
     await this.waitForCurrentRender();

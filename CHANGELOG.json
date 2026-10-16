@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "releases": [
     {
+      "version": "0.5.0",
+      "changes": [
+        "Added a compact, scrollable PlantUML Controls view that follows VS Code's sidebar styling for live toggles and named views.",
+        "Moved viewport actions, export, render status, and interaction guidance onto the diagram preview canvas.",
+        "The Controls view now hides Open Preview while a preview is open and restores it when the preview closes."
+      ]
+    },
+    {
       "version": "0.4.0",
       "changes": [
         "Centralized release history in CHANGELOG.json for the web app, VS Code extension, and GitHub releases.",

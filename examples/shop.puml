@@ -1,0 +1,25 @@
+@startuml
+' Toggle DETAILS in PlantUML Controls, then create a named view.
+!$_live_DETAILS = %true()
+title Shop domain
+skinparam classAttributeIconSize 0
+class Customer
+class Order
+class Product
+Customer "1" -- "many" Order
+Order "many" -- "many" Product
+!if $_live_DETAILS
+class Customer {
+  +name: String
+  +email: String
+}
+class Order {
+  +total(): Money
+  +submit()
+}
+class Product {
+  +sku: String
+  +price: Money
+}
+!endif
+@enduml

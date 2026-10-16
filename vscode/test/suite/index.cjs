@@ -65,6 +65,20 @@ async function run() {
   await vscode.window.showTextDocument(document);
   assert.equal(vscode.window.activeTextEditor?.document, document);
 
+  await waitFor(() => {
+    const controls = extensionApi.getControlsState();
+    return (
+      controls.ready &&
+      controls.visible &&
+      controls.documentUri === sourceUri.toString()
+    );
+  }, "the Explorer controls view");
+  assert.equal(
+    extensionApi.getPreviewCount(),
+    0,
+    "opening a PlantUML document does not automatically create a preview",
+  );
+
   const commands = await vscode.commands.getCommands(true);
   assert.ok(commands.includes(PREVIEW_COMMAND), "preview command is registered");
 
@@ -84,6 +98,15 @@ async function run() {
   }, "the initial diagram render");
   const initialState = extensionApi.getPreviewState(sourceUri.toString());
   const initialFingerprint = initialState.lastRendered.svgFingerprint;
+  const surfaceState = await extensionApi.runPreviewScenario({ action: "inspect" });
+  assert.equal(surfaceState.controlsVisible, true, "controls render in the Explorer view");
+  assert.equal(surfaceState.controlsDiagramChromeVisible, false, "diagram chrome is absent from controls");
+  assert.equal(surfaceState.previewChromeVisible, true, "diagram actions render on the preview");
+  assert.equal(surfaceState.previewStatusVisible, true, "preview render status is on the canvas");
+  assert.equal(extensionApi.getControlsState().previewAvailable, true);
+
+  await vscode.commands.executeCommand("workbench.action.closeSidebar");
+  await waitFor(() => !extensionApi.getControlsState().visible, "the sidebar to close");
 
   editor.selection = new vscode.Selection(
     new vscode.Position(1, 0),
@@ -93,6 +116,12 @@ async function run() {
     const state = extensionApi.getPreviewState(sourceUri.toString());
     return state?.lastSelectionSent.from === 10 && state.lastSelectionSent.to === 15;
   }, "the native editor selection to reach the webview");
+  // Allow a queued reveal command to execute before checking visibility.
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  assert.equal(extensionApi.getControlsState().visible, false,
+    "selection changes respect a hidden sidebar");
+  await vscode.commands.executeCommand("workbench.view.explorer");
+  await waitFor(() => extensionApi.getControlsState().visible, "the controls to reopen");
 
   await vscode.commands.executeCommand(PREVIEW_COMMAND);
   assert.equal(extensionApi.getPreviewCount(), 1, "reopening reuses the preview panel");
@@ -129,6 +158,11 @@ async function run() {
   await extensionApi.disposePreview();
   assert.equal(extensionApi.getPreviewCount(), 0, "the followed preview panel disposes");
   assert.equal(
+    extensionApi.getControlsState().previewAvailable,
+    false,
+    "closing the preview restores the Controls open action",
+  );
+  assert.equal(
     vscode.window.activeTextEditor?.document.uri.toString(),
     secondSourceUri.toString(),
   );
@@ -145,6 +179,12 @@ async function run() {
 
   await extensionApi.disposePreview();
   assert.equal(extensionApi.getPreviewCount(), 0, "the preview panel disposes");
+  await vscode.window.showTextDocument(unsupportedDocument);
+  assert.equal(
+    extensionApi.getControlsState().documentUri,
+    secondSourceUri.toString(),
+    "non-PlantUML editors keep the last diagram bound to controls",
+  );
   await deleteTemporaryFile(sourceUri);
   await deleteTemporaryFile(secondSourceUri);
   await deleteTemporaryFile(unsupportedUri);
