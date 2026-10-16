@@ -22,6 +22,83 @@ function send(message: ExtensionToPreviewMessage) {
 }
 
 describe("VsCodePreviewApp", () => {
+  it("posts diagnostics for the exact document snapshot and clears them on version or URI changes", async () => {
+    vi.useFakeTimers();
+    const diagnostic = { line: 2, message: "Syntax error near line 2." };
+    let resolve!: (
+      value: import("../rendering/plantumlRenderer").RenderResult,
+    ) => void;
+    vi.spyOn(plantUmlRenderer, "render")
+      .mockResolvedValueOnce({
+        ok: false,
+        error: diagnostic.message,
+        diagnostic,
+        renderId: 1,
+        durationMs: 1,
+      })
+      .mockImplementationOnce(
+        () =>
+          new Promise((settle) => {
+            resolve = settle;
+          }),
+      )
+      .mockResolvedValueOnce({
+        ok: true,
+        svg: '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>',
+        renderId: 3,
+        durationMs: 1,
+      });
+    const postMessage = vi.fn();
+    render(<VsCodePreviewApp api={{ postMessage }} />);
+    const snapshot = {
+      type: "documentState" as const,
+      documentUri: DOCUMENT_URI,
+      source: "@startuml\ninvalid\n@enduml",
+      version: 1,
+      fileName: "example.puml",
+      selection: { from: 0, to: 0 },
+    };
+    send(snapshot);
+    await act(async () => vi.runAllTimersAsync());
+    expect(postMessage).toHaveBeenCalledWith({
+      type: "diagnostics",
+      documentUri: DOCUMENT_URI,
+      documentVersion: 1,
+      diagnostics: [diagnostic],
+    });
+    send({ ...snapshot, version: 2 });
+    expect(postMessage).toHaveBeenCalledWith({
+      type: "diagnostics",
+      documentUri: DOCUMENT_URI,
+      documentVersion: 2,
+      diagnostics: [],
+    });
+    await act(async () => vi.runAllTimersAsync());
+    const otherUri = "file:///workspace/other.puml";
+    send({ ...snapshot, documentUri: otherUri });
+    await act(async () => vi.runAllTimersAsync());
+    postMessage.mockClear();
+    await act(async () =>
+      resolve({
+        ok: false,
+        error: diagnostic.message,
+        diagnostic,
+        renderId: 2,
+        durationMs: 1,
+      }),
+    );
+    const messages = postMessage.mock.calls
+      .map(([message]) => message)
+      .filter((message) => message.type === "diagnostics");
+    expect(messages).not.toHaveLength(0);
+    expect(
+      messages.every(
+        (message) =>
+          message.documentUri === otherUri && message.diagnostics.length === 0,
+      ),
+    ).toBe(true);
+  });
+
   it("waits for the first document snapshot and replaces the rendered SVG after edits", async () => {
     vi.useFakeTimers();
     const renderSpy = vi
@@ -255,16 +332,18 @@ describe("VsCodePreviewApp", () => {
     });
   });
 
-  it("rebinds an existing render to a different document with identical source", async () => {
+  it("renders a fresh document snapshot even when its source is identical", async () => {
     vi.useFakeTimers();
     const postMessage = vi.fn<VsCodeApi["postMessage"]>();
     const source = "@startuml\nAlice -> Bob\n@enduml";
-    const renderSpy = vi.spyOn(plantUmlRenderer, "render").mockResolvedValue({
-      ok: true,
-      svg: '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10"><text>Shared</text></svg>',
-      renderId: 1,
-      durationMs: 1,
-    });
+    const renderSpy = vi
+      .spyOn(plantUmlRenderer, "render")
+      .mockImplementation(async (_source, renderId) => ({
+        ok: true,
+        svg: '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10"><text>Shared</text></svg>',
+        renderId,
+        durationMs: 1,
+      }));
     render(<VsCodePreviewApp api={{ postMessage }} />);
 
     send({
@@ -285,9 +364,9 @@ describe("VsCodePreviewApp", () => {
       fileName: "second.puml",
       selection: { from: 0, to: 0 },
     });
-    await act(async () => {});
+    await act(async () => vi.advanceTimersByTimeAsync(300));
 
-    expect(renderSpy).toHaveBeenCalledTimes(1);
+    expect(renderSpy).toHaveBeenCalledTimes(2);
     expect(postMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "rendered",

@@ -61,7 +61,11 @@ describe("getPlantUmlDiagnostic", () => {
     const svg =
       '<svg xmlns="http://www.w3.org/2000/svg"><text>[From textarea (line 2) ]</text><text>Syntax Error? (Assumed diagram type: sequence)</text></svg>';
 
-    expect(getPlantUmlDiagnostic(svg)).toBe("Syntax error near line 2.");
+    expect(getPlantUmlDiagnostic(svg, "@startuml\ninvalid\n@enduml")).toEqual({
+      line: 2,
+      message:
+        "Syntax error near line 2. Syntax Error? (Assumed diagram type: sequence)",
+    });
   });
 
   it.each(["Syntax Error?", "Unsupported diagram type", "[From textarea (line 2)]"])(
@@ -69,15 +73,39 @@ describe("getPlantUmlDiagnostic", () => {
     (label) => {
       expect(getPlantUmlDiagnostic(
         `<svg xmlns="http://www.w3.org/2000/svg"><text>${label}</text></svg>`,
-      )).toBeNull();
+        "@startuml\n@enduml",
+      ),
+    ).toBeNull();
+  });
+
+  it.each([0, -1, 4, Number.MAX_SAFE_INTEGER + 1])(
+    "does not locate an invalid source line %s",
+    (line) => {
+      expect(
+        getPlantUmlDiagnostic(
+          `<svg><text>[From textarea (line ${line})]</text><text>Syntax Error?</text></svg>`,
+          "@startuml\ninvalid\n@enduml",
+        ),
+      ).toEqual({ line: null, message: "Syntax error. Syntax Error?" });
     },
   );
+
+  it("counts CRLF and blank source lines without shifting the location", () => {
+    expect(
+      getPlantUmlDiagnostic(
+        "<svg><text>[From textarea (line 3)]</text><text>Syntax Error?</text></svg>",
+        "@startuml\r\n\r\ninvalid\r\n@enduml",
+      )?.line,
+    ).toBe(3);
+  });
 
   it("accepts normal diagram SVG output", () => {
     const svg =
       '<svg xmlns="http://www.w3.org/2000/svg"><text>User</text></svg>';
 
-    expect(getPlantUmlDiagnostic(svg)).toBeNull();
+    expect(
+      getPlantUmlDiagnostic(svg, "@startuml\ninvalid\n@enduml"),
+    ).toBeNull();
   });
 });
 

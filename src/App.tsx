@@ -13,7 +13,8 @@ import {
 
 export default function App() {
   const { source, setSource } = useEditorState();
-  const { svg, renderRevision, status } = useDiagramRenderer(source);
+  const { svg, renderRevision, status, diagnostics } =
+    useDiagramRenderer(source);
   const { splitPercent, setSplitPercent } = useSplitPosition();
   const shellRef = useRef<HTMLDivElement>(null);
 
@@ -34,7 +35,11 @@ export default function App() {
         className="workspace"
         style={{ "--editor-width": `${splitPercent}%` } as React.CSSProperties}
       >
-        <EditorPanel source={source} onChange={setSource} />
+        <EditorPanel
+          diagnostics={diagnostics}
+          source={source}
+          onChange={setSource}
+        />
 
         <div
           className="split-handle"

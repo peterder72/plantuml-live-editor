@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0
+
+- Added source-line syntax error highlights, gutter markers, and diagnostic tooltips to the web editor.
+- Added native PlantUML error diagnostics in VS Code for the current document snapshot.
+- Clear source diagnostics on edits and document changes, ignore stale render errors, and preserve the last valid diagram and viewport after syntax errors.
+
 ## 0.5.0
 
 - Added a compact, scrollable PlantUML Controls view that follows VS Code's sidebar styling for live toggles and named views.

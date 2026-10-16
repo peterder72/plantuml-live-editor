@@ -161,6 +161,23 @@ export class VsCodeScenarioDriver implements ScenarioDriver {
     );
   }
 
+  async expectSourceError(line: number | null) {
+    const document = this.requireDocument();
+    await waitFor(() => {
+      const entries = vscode.languages
+        .getDiagnostics(document.uri)
+        .filter((entry) => entry.source === "PlantUML");
+      return line === null
+        ? entries.length === 0
+        : entries.length === 1 &&
+            entries[0].severity === vscode.DiagnosticSeverity.Error &&
+            entries[0].range.start.line === line - 1 &&
+            entries[0].range.end.character ===
+              document.lineAt(line - 1).text.length &&
+            /Syntax error/.test(entries[0].message);
+    }, "source syntax diagnostics");
+  }
+
   async expectError(pattern: RegExp) {
     await waitFor(
       () => {
@@ -185,8 +202,11 @@ export class VsCodeScenarioDriver implements ScenarioDriver {
   }
 
   async expectTransformPreserved() {
-    assert.ok(this.rememberedTransform, "No VS Code viewport transform remembered.");
-    await this.waitForCurrentRender();
+    assert.ok(
+      this.rememberedTransform,
+      "No VS Code viewport transform remembered.",
+    );
+    await this.waitForCurrentRender(true);
     const result = await this.runScenario({ action: "inspect" });
     assert.equal(result.transformStyle, this.rememberedTransform);
   }
@@ -234,14 +254,14 @@ export class VsCodeScenarioDriver implements ScenarioDriver {
     const from = document.getText().indexOf(text);
     assert.notEqual(from, -1, `Source text was not found: ${text}`);
     const to = from + text.length;
-    editor.selection = new vscode.Selection(document.positionAt(from), document.positionAt(to));
-    await waitFor(
-      () => {
-        const selection = this.getPreviewState()?.lastSelectionSent;
-        return selection?.from === from && selection.to === to;
-      },
-      "the VS Code selection to reach the preview",
+    editor.selection = new vscode.Selection(
+      document.positionAt(from),
+      document.positionAt(to),
     );
+    await waitFor(() => {
+      const selection = this.getPreviewState()?.lastSelectionSent;
+      return selection?.from === from && selection.to === to;
+    }, "the VS Code selection to reach the preview");
   }
 
   async wrapSelectionWith(name: string) {
@@ -371,15 +391,18 @@ export class VsCodeScenarioDriver implements ScenarioDriver {
     this.extensionApi = undefined;
   }
 
-  private async waitForCurrentRender() {
+  private async waitForCurrentRender(allowError = false) {
     await waitFor(
       () => {
         const document = this.document;
         const state = this.getPreviewState();
         return Boolean(
           document &&
-            state?.ready &&
-            state.lastRendered?.documentVersion === document.version,
+          state?.ready &&
+          (state.lastRendered?.documentVersion === document.version ||
+            (allowError &&
+              state.lastStatus?.documentVersion === document.version &&
+              state.lastStatus.kind === "error")),
         );
       },
       "the VS Code preview to render the current document",

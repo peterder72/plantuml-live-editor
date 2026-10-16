@@ -114,7 +114,9 @@ async function run() {
   );
   await waitFor(() => {
     const state = extensionApi.getPreviewState(sourceUri.toString());
-    return state?.lastSelectionSent.from === 10 && state.lastSelectionSent.to === 15;
+    return (
+      state?.lastSelectionSent.from === 10 && state.lastSelectionSent.to === 15
+    );
   }, "the native editor selection to reach the webview");
   // Allow a queued reveal command to execute before checking visibility.
   await new Promise((resolve) => setTimeout(resolve, 200));
@@ -155,8 +157,60 @@ async function run() {
     "the preview is no longer associated with the first document",
   );
 
+  const validSecondSource = secondDocument.getText();
+  async function replaceSecondSource(source) {
+    const edit = new vscode.WorkspaceEdit();
+    edit.replace(
+      secondSourceUri,
+      new vscode.Range(
+        secondDocument.positionAt(0),
+        secondDocument.positionAt(secondDocument.getText().length),
+      ),
+      source,
+    );
+    assert.equal(await vscode.workspace.applyEdit(edit), true);
+  }
+  const invalidSource = "@startuml\nAlice -> Bob\nthis is invalid ???\n@enduml";
+  await replaceSecondSource(invalidSource);
+  await waitFor(
+    () =>
+      vscode.languages
+        .getDiagnostics(secondSourceUri)
+        .some((entry) => entry.source === "PlantUML"),
+    "native PlantUML source diagnostics",
+  );
+  const syntaxDiagnostic = vscode.languages
+    .getDiagnostics(secondSourceUri)
+    .find((entry) => entry.source === "PlantUML");
+  assert.equal(syntaxDiagnostic.severity, vscode.DiagnosticSeverity.Error);
+  assert.equal(syntaxDiagnostic.range.start.line, 2);
+  assert.equal(
+    syntaxDiagnostic.range.end.character,
+    "this is invalid ???".length,
+  );
+  await replaceSecondSource(validSecondSource);
+  await waitFor(
+    () => vscode.languages.getDiagnostics(secondSourceUri).length === 0,
+    "diagnostics to clear after correction",
+  );
+  await replaceSecondSource(invalidSource);
+  await waitFor(
+    () => vscode.languages.getDiagnostics(secondSourceUri).length > 0,
+    "syntax diagnostics before preview disposal",
+  );
+
   await extensionApi.disposePreview();
-  assert.equal(extensionApi.getPreviewCount(), 0, "the followed preview panel disposes");
+  assert.equal(
+    extensionApi.getPreviewCount(),
+    0,
+    "the followed preview panel disposes",
+  );
+  assert.equal(
+    vscode.languages.getDiagnostics(secondSourceUri).length,
+    0,
+    "disposing the preview clears diagnostics",
+  );
+  await replaceSecondSource(validSecondSource);
   assert.equal(
     extensionApi.getControlsState().previewAvailable,
     false,

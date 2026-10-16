@@ -1,3 +1,4 @@
+import type { PlantUmlDiagnostic } from "../rendering/plantumlRenderer";
 import type { SourceSelection } from "../liveToggles/liveToggleWrap";
 
 export type WebviewSurface = "preview" | "controls";
@@ -55,6 +56,13 @@ export interface ScenarioResultMessage {
   ok: boolean;
   error?: string;
   result?: ScenarioCommandResult;
+}
+
+export interface DiagnosticsMessage {
+  type: "diagnostics";
+  documentUri: string;
+  documentVersion: number;
+  diagnostics: PlantUmlDiagnostic[];
 }
 
 export interface RenderStatusMessage {
@@ -116,6 +124,7 @@ export type PreviewToExtensionMessage =
   | ReplaceSourceMessage
   | RenderedMessage
   | RenderStatusMessage
+  | DiagnosticsMessage
   | ScenarioResultMessage;
 
 export type ControlsToExtensionMessage =

@@ -132,6 +132,30 @@ export class WebScenarioDriver implements ScenarioDriver {
     else await expect(toggle).not.toBeChecked();
   }
 
+  async expectSourceError(line: number | null) {
+    const page = this.requirePage();
+    const highlights = page.locator(".cm-plantuml-error-line");
+    if (line === null) {
+      await expect(highlights).toHaveCount(0);
+    } else {
+      await expect(highlights).toHaveCount(1);
+      const sourceLine = (await this.readSource()).split(/\r\n|\r|\n/)[
+        line - 1
+      ];
+      await expect(highlights).toHaveText(sourceLine);
+      await expect(highlights).toHaveAttribute("title", /Syntax error/);
+      await expect(
+        page.locator(".cm-plantuml-error-gutter [aria-label]"),
+      ).toHaveCount(1);
+      await highlights.locator(".cm-plantuml-error").hover();
+      const tooltip = page.locator(".cm-plantuml-error-tooltip");
+      await expect(tooltip).toBeVisible();
+      await expect(tooltip).toContainText("Syntax error near line");
+      await expect(tooltip).toHaveCSS("color", "rgb(214, 222, 235)");
+      await expect(tooltip).toHaveCSS("background-color", "rgb(23, 32, 43)");
+    }
+  }
+
   async expectError(pattern: RegExp) {
     await expect(this.requirePage().getByRole("alert").first()).toContainText(pattern, {
       timeout: renderTimeout,
@@ -158,11 +182,14 @@ export class WebScenarioDriver implements ScenarioDriver {
   }
 
   async expectTransformPreserved() {
-    assert.notEqual(this.rememberedTransform, null, "No viewport transform remembered.");
-    await expect(this.requirePage().getByTestId("diagram-transform")).toHaveAttribute(
-      "style",
-      this.rememberedTransform ?? "",
+    assert.notEqual(
+      this.rememberedTransform,
+      null,
+      "No viewport transform remembered.",
     );
+    await expect(
+      this.requirePage().getByTestId("diagram-transform"),
+    ).toHaveAttribute("style", this.rememberedTransform ?? "");
   }
 
   async fitAndResetView() {

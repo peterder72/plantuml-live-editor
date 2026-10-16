@@ -1,9 +1,21 @@
 import { sanitizeSvg } from "./svgSanitizer";
 import vizSource from "@peterder72/plantuml-core/viz-global.js?raw";
 
+export interface PlantUmlDiagnostic {
+  message: string;
+  /** One-based source line, when the engine supplies a valid location. */
+  line: number | null;
+}
+
 export type RenderResult =
   | { ok: true; svg: string; renderId: number; durationMs: number }
-  | { ok: false; error: string; renderId: number; durationMs: number };
+  | {
+      ok: false;
+      error: string;
+      diagnostic?: PlantUmlDiagnostic;
+      renderId: number;
+      durationMs: number;
+    };
 
 export interface PlantUmlRenderer {
   initialize(): Promise<void>;
@@ -100,9 +112,15 @@ class BrowserPlantUmlRenderer implements PlantUmlRenderer {
 
         const svg = await renderToSvg(renderToString, source);
 
-        const diagnostic = getPlantUmlDiagnostic(svg);
+        const diagnostic = getPlantUmlDiagnostic(svg, source);
         if (diagnostic) {
-          throw new Error(diagnostic);
+          return {
+            ok: false as const,
+            error: diagnostic.message,
+            diagnostic,
+            renderId,
+            durationMs: performance.now() - startedAt,
+          };
         }
 
         return {
@@ -138,21 +156,31 @@ export function assertOfflineSource(source: string): void {
   }
 }
 
-export function getPlantUmlDiagnostic(svg: string): string | null {
+export function getPlantUmlDiagnostic(
+  svg: string,
+  source: string,
+): PlantUmlDiagnostic | null {
   const parsed = new DOMParser().parseFromString(svg, "image/svg+xml");
   const labels = Array.from(parsed.querySelectorAll("text"), (element) =>
     element.textContent?.replace(/\s+/g, " ").trim() ?? "",
   );
-  // Error SVGs contain a source-location header and a separate diagnostic.
-  // Unsupported diagrams are reported through the engine's error callback.
   const location = labels
-    .map((label) => /^\[From .+?\(line\s+(\d+)\)\s*\]$/i.exec(label))
+    .map((label) => /^\[From .+?\(line\s+(-?\d+)\)\s*\]$/i.exec(label))
     .find((match) => match !== null);
-  if (location && labels.some((label) => /^Syntax Error\?(?:\s|$)/i.test(label))) {
-    return `Syntax error near line ${location[1]}.`;
-  }
-
-  return null;
+  const detail = labels.find((label) => /^Syntax Error\?(?:\s|$)/i.test(label));
+  // Require both signals so ordinary diagram labels are not treated as errors.
+  if (!location || !detail) return null;
+  const reportedLine = Number(location[1]);
+  const line =
+    Number.isSafeInteger(reportedLine) &&
+    reportedLine > 0 &&
+    reportedLine <= source.split(/\r\n|\r|\n/).length
+      ? reportedLine
+      : null;
+  return {
+    message: `${line === null ? "Syntax error." : `Syntax error near line ${line}.`} ${detail}`,
+    line,
+  };
 }
 
 function normalizeError(error: unknown): string {

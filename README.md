@@ -7,6 +7,15 @@ TeaVM browser engine. Graphviz WASM is embedded in the final HTML.
 A public instance is available at
 [peterder72.github.io/plantuml-live-editor](https://peterder72.github.io/plantuml-live-editor/).
 
+## Syntax diagnostics
+
+Version 0.6.0 highlights syntax errors on the reported source line in the web
+editor, with a gutter marker and a hover tooltip. VS Code shows native error
+squiggles and Problems entries while the preview is open. Diagnostics clear on
+edits and document changes; stale render results cannot mark a newer snapshot.
+Failed renders preserve the last valid diagram and its pan and zoom position.
+Errors without a valid source location appear in the render status only.
+
 ## Prerequisites
 
 Install [Bun](https://bun.sh/):
@@ -138,7 +147,8 @@ directly on the preview canvas. Both webviews remain fully offline.
 - A restrictive Content Security Policy, startup network lockdown, source
   validation, and inert-SVG allowlist prevent the application and renderer from
   initiating network requests. This assumes an uncompromised browser and OS.
-- Autocomplete, rich diagnostics, and sharing are outside the MVP.
+- Autocomplete, diagnostics beyond engine-reported syntax errors, and sharing
+  are outside the MVP.
 
 ## Nix development
 

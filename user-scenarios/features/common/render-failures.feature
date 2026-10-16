@@ -80,6 +80,7 @@ Feature: Preserve a useful diagram when rendering fails
       @enduml
       """
     And I remember the current diagram
+    When I pan and zoom the diagram
     When I replace the PlantUML source with:
       """
       @startuml
@@ -89,3 +90,14 @@ Feature: Preserve a useful diagram when rendering fails
       """
     Then a diagram error containing "Syntax error near line" is shown
     And the previous diagram is preserved
+    And source line 3 is highlighted as an error
+    And the viewport transform is preserved
+    When I replace the PlantUML source with:
+      """
+      @startuml
+      Alice -> Bob: Corrected request
+      @enduml
+      """
+    Then the diagram is rerendered
+    And the source has no error highlights
+    And the viewport transform is preserved

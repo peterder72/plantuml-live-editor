@@ -12,6 +12,7 @@ export interface ScenarioDriver {
   expectRenderUnchanged(previous: RenderSnapshot): Promise<void>;
   expectDiagramContains(text: string, visible?: boolean): Promise<void>;
   expectSourceContains(text: string, present?: boolean): Promise<void>;
+  expectSourceError(line: number | null): Promise<void>;
   expectError(pattern: RegExp): Promise<void>;
   panAndZoom(): Promise<void>;
   expectTransformPreserved(): Promise<void>;

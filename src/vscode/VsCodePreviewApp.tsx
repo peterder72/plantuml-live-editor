@@ -39,8 +39,11 @@ export function VsCodePreviewApp({ api }: VsCodePreviewAppProps = {}) {
   const [fileName, setFileName] = useState("diagram.puml");
   const [hostError, setHostError] = useState<string | null>(null);
   const persisted = useMemo(() => vscode.getState?.() ?? {}, [vscode]);
-  const { svg, renderRevision, acceptedRender, status } =
-    useDiagramRenderer(hasDocumentState ? source : null);
+  const { svg, renderRevision, acceptedRender, status, diagnostics } =
+    useDiagramRenderer(
+      hasDocumentState ? source : null,
+      `${documentUri}:${version}`,
+    );
 
   useEffect(() => {
     const receiveMessage = (event: MessageEvent<ExtensionToPreviewMessage>) => {
@@ -84,6 +87,7 @@ export function VsCodePreviewApp({ api }: VsCodePreviewAppProps = {}) {
       !hasDocumentState ||
       !acceptedRender ||
       acceptedRender.source !== source ||
+      acceptedRender.identity !== `${documentUri}:${version}` ||
       status.kind !== "success"
     ) {
       return;
@@ -138,11 +142,18 @@ export function VsCodePreviewApp({ api }: VsCodePreviewAppProps = {}) {
     });
   }, [documentUri, hasDocumentState, svg, version, visibleStatus, vscode]);
 
+  useEffect(() => {
+    if (!hasDocumentState) return;
+    vscode.postMessage({
+      type: "diagnostics",
+      documentUri,
+      documentVersion: version,
+      diagnostics,
+    });
+  }, [documentUri, version, hasDocumentState, diagnostics, vscode]);
+
   const persistExportOptions = useCallback(
-    (options: {
-      format: "png" | "svg";
-      background: "transparent" | "white";
-    }) =>
+    (options: { format: "png" | "svg"; background: "transparent" | "white" }) =>
       vscode.setState?.({
         exportFormat: options.format,
         exportBackground: options.background,

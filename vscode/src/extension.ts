@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { currentSourceDiagnostics } from "../../src/vscode/sourceDiagnostics";
 import type {
   DocumentStateMessage,
   ExtensionToWebviewMessage,
@@ -275,11 +276,14 @@ class DocumentSession {
   constructor(
     private readonly controls: ControlsViewProvider,
     private readonly openPreview: () => void,
+    private readonly diagnostics: vscode.DiagnosticCollection,
   ) {}
 
   followDocument(document: vscode.TextDocument) {
     if (!isPlantUmlDocument(document)) return;
     const changed = this.document?.uri.toString() !== document.uri.toString();
+    if (changed || this.document?.version !== document.version)
+      this.diagnostics.clear();
     this.document = document;
     if (changed) {
       this.lastRendered = undefined;
@@ -299,7 +303,11 @@ class DocumentSession {
   detachPreview(preview: PreviewPanel) {
     if (this.preview !== preview) return;
     this.preview = undefined;
-    void this.controls.postMessage({ type: "previewAvailability", available: false });
+    this.diagnostics.clear();
+    void this.controls.postMessage({
+      type: "previewAvailability",
+      available: false,
+    });
   }
 
   getDocument() {
@@ -376,6 +384,28 @@ class DocumentSession {
       return;
     }
 
+    if (message.type === "diagnostics" && surface === "preview") {
+      const document = this.document;
+      if (!this.preview || !document || document.isClosed) return;
+      const entries = currentSourceDiagnostics(message, {
+        uri: document.uri.toString(),
+        version: document.version,
+        lineCount: document.lineCount,
+      });
+      if (entries === null) return;
+      const diagnostics = entries.map((entry) => {
+        const diagnostic = new vscode.Diagnostic(
+          document.lineAt(entry.line - 1).range,
+          entry.message,
+          vscode.DiagnosticSeverity.Error,
+        );
+        diagnostic.source = "PlantUML";
+        return diagnostic;
+      });
+      this.diagnostics.set(document.uri, diagnostics);
+      return;
+    }
+
     if (message.type === "renderStatus" && surface === "preview") {
       if (message.documentUri !== this.document?.uri.toString()) return;
       if (
@@ -392,7 +422,6 @@ class DocumentSession {
       };
       return;
     }
-
   }
 
   async runScenario(command: ScenarioCommand) {
@@ -539,13 +568,21 @@ export function activate(context: vscode.ExtensionContext) {
     session.attachPreview(preview);
   };
 
-  const session = new DocumentSession(controls, openPreview);
+  const diagnostics = vscode.languages.createDiagnosticCollection("plantuml");
+  context.subscriptions.push(diagnostics);
+  const session = new DocumentSession(controls, openPreview, diagnostics);
   sessionRef.current = session;
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(CONTROLS_VIEW_ID, controls),
     vscode.commands.registerCommand(PREVIEW_COMMAND, openPreview),
+    vscode.workspace.onDidCloseTextDocument((document) =>
+      diagnostics.delete(document.uri),
+    ),
     vscode.workspace.onDidChangeTextDocument((event) => {
-      if (event.document.uri.toString() === session.getDocument()?.uri.toString()) {
+      if (event.contentChanges.length) diagnostics.delete(event.document.uri);
+      if (
+        event.document.uri.toString() === session.getDocument()?.uri.toString()
+      ) {
         session.followDocument(event.document);
       }
     }),

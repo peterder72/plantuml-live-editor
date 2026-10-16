@@ -4,14 +4,23 @@ import { PanelFooter, PanelHeader } from "../components/Panel";
 import { LiveToggleCard } from "../liveToggles/LiveToggleCard";
 import type { SourceSelection } from "../liveToggles/liveToggleWrap";
 import { PlantUmlEditor } from "./PlantUmlEditor";
+import type { PlantUmlDiagnostic } from "../rendering/plantumlRenderer";
 
 interface EditorPanelProps {
+  diagnostics: PlantUmlDiagnostic[];
   source: string;
   onChange: (source: string) => void;
 }
 
-export function EditorPanel({ source, onChange }: EditorPanelProps) {
-  const [selection, setSelection] = useState<SourceSelection>({ from: 0, to: 0 });
+export function EditorPanel({
+  source,
+  onChange,
+  diagnostics,
+}: EditorPanelProps) {
+  const [selection, setSelection] = useState<SourceSelection>({
+    from: 0,
+    to: 0,
+  });
 
   return (
     <section className="panel editor-panel" aria-label="Source panel">
@@ -35,6 +44,7 @@ export function EditorPanel({ source, onChange }: EditorPanelProps) {
           }}
         />
         <PlantUmlEditor
+          diagnostics={diagnostics}
           value={source}
           onChange={onChange}
           selection={selection}

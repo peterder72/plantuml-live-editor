@@ -38,6 +38,9 @@ discarding the last valid diagram.
 - Select source lines in the native editor and use **Wrap selection** to place
   them inside the chosen live flag condition.
 - Render initialization, progress, duration, and error feedback.
+- Native syntax error squiggles and Problems entries for engine-reported source
+  lines while the preview is open. Diagnostics clear on edits, document changes,
+  and preview disposal; errors without a source location appear in render status.
 
 ## Privacy and Security
 
