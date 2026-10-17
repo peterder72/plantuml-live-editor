@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.7.0
+
+- Added VS Code Copilot tools and commands to validate diagrams, export SVG/PNG images, inspect live flags and named views, and open previews.
+- Added workspace validation and configurable validation/export tasks with JSON results and Problems integration.
+- Automation renders current unsaved source in an isolated offline renderer, supports named views, rejects stale results, and preserves the interactive preview.
+
+## 0.6.0
+
+- Added source-line syntax error highlights, gutter markers, and diagnostic tooltips to the web editor.
+- Added native PlantUML error diagnostics in VS Code for the current document snapshot.
+- Clear source diagnostics on edits and document changes, ignore stale render errors, and preserve the last valid diagram and viewport after syntax errors.
+
+## 0.5.0
+
+- Added a compact, scrollable PlantUML Controls view that follows VS Code's sidebar styling for live toggles and named views.
+- Moved viewport actions, export, render status, and interaction guidance onto the diagram preview canvas.
+- The Controls view now hides Open Preview while a preview is open and restores it when the preview closes.
+
 ## 0.4.0
 
 - Centralized release history in CHANGELOG.json for the web app, VS Code extension, and GitHub releases.

@@ -27,8 +27,11 @@ import type { SourceSelection } from "../liveToggles/liveToggleWrap";
 import { copyEditorSelection } from "./editorClipboard";
 import { minimalDocumentChange } from "./editorDocumentChange";
 import { plantUmlFolding } from "./plantUmlFolding";
+import type { PlantUmlDiagnostic } from "../rendering/plantumlRenderer";
+import { diagnosticExtension, setEditorDiagnostics } from "./editorDiagnostics";
 
 interface PlantUmlEditorProps {
+  diagnostics?: PlantUmlDiagnostic[];
   value: string;
   onChange: (value: string) => void;
   selection: SourceSelection;
@@ -180,6 +183,7 @@ const editorTheme = EditorView.theme({
 
 export function PlantUmlEditor({
   value,
+  diagnostics,
   onChange,
   selection,
   onSelectionChange,
@@ -201,6 +205,7 @@ export function PlantUmlEditor({
         doc: initialValueRef.current,
         extensions: [
           lineNumbers(),
+          diagnosticExtension,
           foldGutter(),
           highlightActiveLineGutter(),
           history(),
@@ -248,6 +253,12 @@ export function PlantUmlEditor({
     const change = minimalDocumentChange(view.state.doc.toString(), value);
     if (change) view.dispatch({ changes: change });
   }, [value]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (view)
+      view.dispatch({ effects: setEditorDiagnostics.of(diagnostics ?? []) });
+  }, [diagnostics, value]);
 
   useEffect(() => {
     const view = viewRef.current;

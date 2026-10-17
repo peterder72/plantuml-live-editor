@@ -7,6 +7,7 @@ interface IsolatedVSCodeTestOptions {
   extensionDevelopmentPath: string;
   extensionTestsPath: string;
   launchArgs?: string[];
+  openWorkspace?: boolean;
   diagnosticsName: string;
 }
 
@@ -22,6 +23,7 @@ export async function runIsolatedVSCodeTests({
   extensionDevelopmentPath,
   extensionTestsPath,
   launchArgs = [],
+  openWorkspace = false,
   diagnosticsName,
 }: IsolatedVSCodeTestOptions) {
   // VS Code creates a Unix socket below user-data-dir. macOS's default temporary
@@ -59,6 +61,7 @@ export async function runIsolatedVSCodeTests({
         "--disable-extensions",
         "--skip-welcome",
         "--skip-release-notes",
+        ...(openWorkspace ? [workspaceDir] : []),
         ...launchArgs,
       ],
     });

@@ -5,4 +5,5 @@ await runIsolatedVSCodeTests({
   extensionDevelopmentPath: resolve("vscode"),
   extensionTestsPath: resolve("vscode/test/suite/index.cjs"),
   diagnosticsName: "integration",
+  openWorkspace: true,
 });

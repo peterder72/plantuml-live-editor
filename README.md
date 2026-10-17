@@ -7,6 +7,21 @@ TeaVM browser engine. Graphviz WASM is embedded in the final HTML.
 A public instance is available at
 [peterder72.github.io/plantuml-live-editor](https://peterder72.github.io/plantuml-live-editor/).
 
+## Release 0.7.0
+
+Adds VS Code Copilot tools, validation/export commands, and workspace tasks.
+See the [automation guide](vscode/README.md#copilot-tools-and-automation) for usage
+and [CHANGELOG.json](CHANGELOG.json) for the full release history.
+
+## Syntax diagnostics
+
+The editor highlights syntax errors on the reported source line in the web
+editor, with a gutter marker and a hover tooltip. VS Code shows native error
+squiggles and Problems entries while the preview is open. Diagnostics clear on
+edits and document changes; stale render results cannot mark a newer snapshot.
+Failed renders preserve the last valid diagram and its pan and zoom position.
+Errors without a valid source location appear in the render status only.
+
 ## Prerequisites
 
 Install [Bun](https://bun.sh/):
@@ -109,10 +124,27 @@ synchronize the version into the extension manifest and generate
 `vscode/CHANGELOG.md` from the JSON before verification and packaging. Tagged
 GitHub releases use the matching JSON entry as their release notes.
 
-After installing the VSIX, open a PlantUML document and run
-**PlantUML: Open Preview to the Side**. The extension uses VS Code's native text
-editor with bundled PlantUML syntax highlighting and keeps rendering, live
-toggles, pan, zoom, fit, reset, and export in an offline webview.
+After installing the VSIX, open a PlantUML document. The lightweight
+**PlantUML Controls** view opens below the File Explorer for live toggles,
+named views, and wrapping selected source. Use **Open Preview** there, the
+editor-title button, or **PlantUML: Open Preview to the Side** to open the
+diagram. Viewport actions, export, render status, and interaction guidance sit
+directly on the preview canvas. Both webviews remain fully offline.
+
+### Copilot tools and automation
+
+VS Code now provides Copilot tools to validate PlantUML, export SVG/PNG images,
+inspect live flags and named views, and open previews. The Command Palette also
+includes **PlantUML: Check for Errors**, **PlantUML: Export Diagram**, and
+**PlantUML: Inspect Flags and Views**.
+
+Validation and export use current unsaved source and an isolated offline renderer,
+preserving the interactive preview and viewport. Named views can be rendered
+without editing source. Workspace validation and configurable validation/export
+tasks support repeatable checks and image generation.
+
+See the [extension automation guide](vscode/README.md#copilot-tools-and-automation)
+for tool inputs, export options, and task configuration.
 
 ## Architecture
 
@@ -124,7 +156,8 @@ toggles, pan, zoom, fit, reset, and export in an offline webview.
   transform state.
 - `src/state/` persists source locally without making storage availability a
   requirement.
-- `src/vscode/` is the shared preview webview shell and message contract.
+- `src/vscode/` contains the separate preview and Explorer-controls webview
+  shells plus their extension-host message contract.
 - `vscode/` contains the VS Code extension host, manifest, and build targets.
 
 ## Known Limitations
@@ -135,4 +168,40 @@ toggles, pan, zoom, fit, reset, and export in an offline webview.
 - A restrictive Content Security Policy, startup network lockdown, source
   validation, and inert-SVG allowlist prevent the application and renderer from
   initiating network requests. This assumes an uncompromised browser and OS.
-- Autocomplete, rich diagnostics, and sharing are outside the MVP.
+- Autocomplete, diagnostics beyond engine-reported syntax errors, and sharing
+  are outside the MVP.
+
+## Nix development
+
+With Nix flakes enabled, run these commands from the repository root:
+
+```sh
+nix develop
+bun install --frozen-lockfile
+bun run dev
+```
+
+Launch a clean VS Code with a freshly built and packaged extension:
+
+```sh
+nix run .#vscode
+# Or open a particular diagram:
+nix run .#vscode -- examples/components.puml
+```
+
+The launcher builds the current working checkout, including uncommitted edits,
+installs the VSIX into a new temporary extensions directory, and opens a fresh
+user profile. Your normal VS Code settings and extensions are untouched. Close
+its window to remove the temporary profile. From `nix develop`, the same command
+is available as `plantuml-vscode` (or `bun run dev:vscode`).
+
+`flake.lock` pins Nix tools for Apple Silicon macOS and aarch64/x86_64 Linux; `bun.lock` pins JavaScript
+dependencies. The first invocation needs network access to fetch tools and
+packages. The extension itself renders offline. This is a development launcher:
+the extension build runs in the writable checkout, outside the Nix sandbox.
+VS Code is supplied by Nixpkgs under its unfree license.
+
+Try `examples/shop.puml` for classes and member visibility, or
+`examples/components.puml` for components. Both declare live flags you can toggle
+in **PlantUML Controls**. Use **Open Preview** to render, and create named views
+to save different flag combinations.

@@ -1,19 +1,27 @@
-import { useEffect, useMemo, useState } from "react";
+import { CircleAlert } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { RenderStatus } from "../components/AppHeader";
-import { LiveToggleCard } from "../liveToggles/LiveToggleCard";
 import type { SourceSelection } from "../liveToggles/liveToggleWrap";
-import { PreviewPanel } from "../preview/PreviewPanel";
+import { DiagramExportMenu } from "../preview/DiagramExportMenu";
+import { DiagramViewport } from "../preview/DiagramViewport";
 import { useDiagramRenderer } from "../rendering/useDiagramRenderer";
 import { toggleHiddenMembers } from "../rendering/classMemberVisibility";
 import { fingerprint } from "../shared/fingerprint";
 import type {
-  ExtensionToWebviewMessage,
-  WebviewToExtensionMessage,
+  ExtensionToPreviewMessage,
+  PreviewToExtensionMessage,
 } from "./messages";
 import { runScenarioCommand } from "./scenarioBridge";
 
 export interface VsCodeApi {
-  postMessage(message: WebviewToExtensionMessage): void;
+  postMessage(message: PreviewToExtensionMessage): void;
+  getState?(): PersistedPreviewState | undefined;
+  setState?(state: PersistedPreviewState): void;
+}
+
+interface PersistedPreviewState {
+  exportFormat?: "png" | "svg";
+  exportBackground?: "transparent" | "white";
 }
 
 declare function acquireVsCodeApi(): VsCodeApi;
@@ -28,14 +36,17 @@ export function VsCodePreviewApp({ api }: VsCodePreviewAppProps = {}) {
   const [documentUri, setDocumentUri] = useState("");
   const [hasDocumentState, setHasDocumentState] = useState(false);
   const [version, setVersion] = useState(0);
-  const [fileName, setFileName] = useState("PlantUML");
-  const [selection, setSelection] = useState<SourceSelection>({ from: 0, to: 0 });
+  const [fileName, setFileName] = useState("diagram.puml");
   const [hostError, setHostError] = useState<string | null>(null);
-  const { svg, renderRevision, acceptedRender, status } =
-    useDiagramRenderer(hasDocumentState ? source : null);
+  const persisted = useMemo(() => vscode.getState?.() ?? {}, [vscode]);
+  const { svg, renderRevision, acceptedRender, status, diagnostics } =
+    useDiagramRenderer(
+      hasDocumentState ? source : null,
+      `${documentUri}:${version}`,
+    );
 
   useEffect(() => {
-    const receiveMessage = (event: MessageEvent<ExtensionToWebviewMessage>) => {
+    const receiveMessage = (event: MessageEvent<ExtensionToPreviewMessage>) => {
       const message = event.data;
       if (message.type === "documentState") {
         setDocumentUri(message.documentUri);
@@ -43,7 +54,6 @@ export function VsCodePreviewApp({ api }: VsCodePreviewAppProps = {}) {
         setHasDocumentState(true);
         setVersion(message.version);
         setFileName(message.fileName);
-        setSelection(message.selection);
         setHostError(null);
       } else if (message.type === "showError") {
         setHostError(message.message);
@@ -68,7 +78,7 @@ export function VsCodePreviewApp({ api }: VsCodePreviewAppProps = {}) {
     };
 
     window.addEventListener("message", receiveMessage);
-    vscode.postMessage({ type: "ready" });
+    vscode.postMessage({ type: "ready", surface: "preview" });
     return () => window.removeEventListener("message", receiveMessage);
   }, [vscode]);
 
@@ -77,6 +87,7 @@ export function VsCodePreviewApp({ api }: VsCodePreviewAppProps = {}) {
       !hasDocumentState ||
       !acceptedRender ||
       acceptedRender.source !== source ||
+      acceptedRender.identity !== `${documentUri}:${version}` ||
       status.kind !== "success"
     ) {
       return;
@@ -131,29 +142,69 @@ export function VsCodePreviewApp({ api }: VsCodePreviewAppProps = {}) {
     });
   }, [documentUri, hasDocumentState, svg, version, visibleStatus, vscode]);
 
+  useEffect(() => {
+    if (!hasDocumentState) return;
+    vscode.postMessage({
+      type: "diagnostics",
+      documentUri,
+      documentVersion: version,
+      diagnostics,
+    });
+  }, [documentUri, version, hasDocumentState, diagnostics, vscode]);
+
+  const persistExportOptions = useCallback(
+    (options: { format: "png" | "svg"; background: "transparent" | "white" }) =>
+      vscode.setState?.({
+        exportFormat: options.format,
+        exportBackground: options.background,
+      }),
+    [vscode],
+  );
+
   return (
     <main className="vscode-preview">
-      <div className="vscode-toggle-region">
-        <LiveToggleCard
-          source={source}
-          selection={selection}
-          onChange={updateSource}
-          onWrap={(wrapped) =>
-            updateSource(wrapped.source, wrapped.selection)
+      <div className="preview-body">
+        <DiagramViewport
+          svg={svg}
+          renderRevision={renderRevision}
+          onToggleMembers={(entity) =>
+            updateSource(toggleHiddenMembers(source, entity))
           }
         />
+        <div
+          className="preview-export-toolbar"
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <DiagramExportMenu
+            svg={svg}
+            sourceFileName={fileName}
+            initialFormat={persisted.exportFormat}
+            initialBackground={persisted.exportBackground}
+            onOptionsChange={persistExportOptions}
+          />
+        </div>
+        <div className="preview-hud">
+          <span
+            className={`preview-render-status status-${visibleStatus.kind}`}
+            aria-live="polite"
+          >
+            {visibleStatus.label}
+          </span>
+          <span className="preview-hud-secondary">
+            Scroll to zoom · Drag to pan · Click a class to hide members · Max
+            8192 × 8192
+          </span>
+        </div>
+        {visibleStatus.kind === "error" && (
+          <div className="error-toast" role="alert">
+            <CircleAlert size={17} />
+            <div>
+              <strong>Diagram error</strong>
+              <span>{visibleStatus.label}</span>
+            </div>
+          </div>
+        )}
       </div>
-      <PreviewPanel
-        svg={svg}
-        renderRevision={renderRevision}
-        status={visibleStatus}
-        exportFileName={fileName}
-        onToggleMembers={(entity) =>
-          updateSource(toggleHiddenMembers(source, entity))
-        }
-        title={fileName}
-        showStatusInFooter
-      />
     </main>
   );
 }

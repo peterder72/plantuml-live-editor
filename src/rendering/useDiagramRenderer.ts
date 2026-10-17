@@ -3,19 +3,32 @@ import type { RenderStatus } from "../components/AppHeader";
 import {
   plantUmlRenderer,
   type RenderResult,
+  type PlantUmlDiagnostic,
 } from "./plantumlRenderer";
 
 interface RenderRequest {
   source: string;
+  identity: string | null;
   renderId: number;
 }
 
 interface AcceptedRender {
   source: string;
+  identity: string | null;
   renderId: number;
 }
 
-export function useDiagramRenderer(source: string | null) {
+const NO_DIAGNOSTICS: PlantUmlDiagnostic[] = [];
+
+export function useDiagramRenderer(
+  source: string | null,
+  identity: string | null = source,
+) {
+  const [diagnosticState, setDiagnosticState] = useState<{
+    source: string;
+    identity: string | null;
+    diagnostics: PlantUmlDiagnostic[];
+  } | null>(null);
   const [svg, setSvg] = useState("");
   const [renderRevision, setRenderRevision] = useState(0);
   const [acceptedRender, setAcceptedRender] = useState<AcceptedRender | null>(
@@ -33,32 +46,40 @@ export function useDiagramRenderer(source: string | null) {
   const mountedRef = useRef(true);
   const runRequestRef = useRef<(request: RenderRequest) => void>(() => {});
 
-  const acceptResult = useCallback((result: RenderResult, source: string) => {
-    if (!mountedRef.current) return;
-    if (
-      result.renderId !== renderIdRef.current ||
-      result.renderId < latestAcceptedRef.current
-    ) {
-      return;
-    }
-    latestAcceptedRef.current = result.renderId;
+  const acceptResult = useCallback(
+    (result: RenderResult, source: string, identity: string | null) => {
+      if (!mountedRef.current) return;
+      if (
+        result.renderId !== renderIdRef.current ||
+        result.renderId < latestAcceptedRef.current
+      ) {
+        return;
+      }
+      latestAcceptedRef.current = result.renderId;
+      setDiagnosticState({
+        source,
+        identity,
+        diagnostics: !result.ok && result.diagnostic ? [result.diagnostic] : [],
+      });
 
-    if (result.ok) {
-      hasSvgRef.current = true;
-      setSvg(result.svg);
-      setRenderRevision((revision) => revision + 1);
-      setAcceptedRender({ source, renderId: result.renderId });
-      setStatus({
-        kind: "success",
-        label: `Rendered in ${Math.round(result.durationMs)} ms`,
-      });
-    } else {
-      setStatus({
-        kind: "error",
-        label: result.error || "Unable to render this diagram.",
-      });
-    }
-  }, []);
+      if (result.ok) {
+        hasSvgRef.current = true;
+        setSvg(result.svg);
+        setRenderRevision((revision) => revision + 1);
+        setAcceptedRender({ source, identity, renderId: result.renderId });
+        setStatus({
+          kind: "success",
+          label: `Rendered in ${Math.round(result.durationMs)} ms`,
+        });
+      } else {
+        setStatus({
+          kind: "error",
+          label: result.error || "Unable to render this diagram.",
+        });
+      }
+    },
+    [],
+  );
 
   const runRequest = useCallback(
     (request: RenderRequest) => {
@@ -66,7 +87,7 @@ export function useDiagramRenderer(source: string | null) {
       void Promise.resolve()
         .then(() => plantUmlRenderer.render(request.source, request.renderId))
         .then(
-          (result) => acceptResult(result, request.source),
+          (result) => acceptResult(result, request.source, request.identity),
           (error: unknown) =>
             acceptResult(
               {
@@ -79,6 +100,7 @@ export function useDiagramRenderer(source: string | null) {
                 durationMs: 0,
               },
               request.source,
+              request.identity,
             ),
         )
         .finally(() => {
@@ -101,10 +123,17 @@ export function useDiagramRenderer(source: string | null) {
   }, []);
 
   useEffect(() => {
-    if (source === null) return;
+    setDiagnosticState(null);
+    if (source === null) {
+      if (renderIdRef.current > 0) ++renderIdRef.current;
+      pendingRef.current = null;
+      return;
+    }
+    pendingRef.current = null;
 
     const request = {
       source,
+      identity,
       renderId: ++renderIdRef.current,
     };
     const hasSvg = hasSvgRef.current;
@@ -129,7 +158,11 @@ export function useDiagramRenderer(source: string | null) {
     }, hasSvg ? 300 : 0);
 
     return () => window.clearTimeout(timeout);
-  }, [source]);
+  }, [source, identity]);
 
-  return { svg, renderRevision, acceptedRender, status };
+  const diagnostics =
+    diagnosticState?.source === source && diagnosticState.identity === identity
+      ? diagnosticState.diagnostics
+      : NO_DIAGNOSTICS;
+  return { svg, renderRevision, acceptedRender, status, diagnostics };
 }

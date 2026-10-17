@@ -5,7 +5,7 @@ export interface LiveToggle {
 }
 
 const LIVE_TOGGLE_ASSIGNMENT =
-  /^([ \t]*)!\$(?<name>_live_(?<label>[A-Za-z0-9_]+))(?<beforeEquals>[ \t]*)=(?<afterEquals>[ \t]*)(?<value>%true\(\)|%false\(\)|true|false)(?<suffix>[ \t]*(?:'.*)?)$/i;
+  /^([ \t]*)!\$(?<name>_live_(?<label>[A-Za-z0-9_]+))(?<beforeEquals>[ \t]*)=(?<afterEquals>[ \t]*)(?<value>%true\(\)|%false\(\)|true|false)(?<suffix>[ \t]*(?:'.*)?)$/di;
 
 function parseLine(line: string) {
   const match = LIVE_TOGGLE_ASSIGNMENT.exec(line);
@@ -72,8 +72,7 @@ export function setLiveToggleValue(
       const parsed = parseLine(part);
       if (!parsed || parsed.name !== name) return part;
 
-      const valueStart = parsed.match.index + parsed.match[0].indexOf(parsed.match.groups!.value);
-      const valueEnd = valueStart + parsed.match.groups!.value.length;
+      const [valueStart, valueEnd] = parsed.match.indices!.groups!.value;
       return `${part.slice(0, valueStart)}${value ? "%true()" : "%false()"}${part.slice(valueEnd)}`;
     })
     .join("");

@@ -156,6 +156,88 @@ describe("useDiagramRenderer", () => {
     expect(result.current.status.kind).toBe("success");
   });
 
+  it("clears source diagnostics immediately on edits and ignores stale errors", async () => {
+    vi.useFakeTimers();
+    const stale = deferred<RenderResult>();
+    const diagnostic = { line: 2, message: "Syntax error near line 2." };
+    vi.spyOn(plantUmlRenderer, "render")
+      .mockResolvedValueOnce({
+        ok: false,
+        error: diagnostic.message,
+        diagnostic,
+        renderId: 1,
+        durationMs: 1,
+      })
+      .mockReturnValueOnce(stale.promise)
+      .mockResolvedValueOnce(success(3, "fixed"));
+    const { result, rerender } = renderHook(
+      ({ source }) => useDiagramRenderer(source),
+      { initialProps: { source: FIRST_SOURCE } },
+    );
+    await flushTimers();
+    expect(result.current.diagnostics).toEqual([diagnostic]);
+    rerender({ source: SECOND_SOURCE });
+    expect(result.current.diagnostics).toEqual([]);
+    await flushTimers();
+    rerender({ source: THIRD_SOURCE });
+    await flushTimers();
+    await act(async () =>
+      stale.resolve({
+        ok: false,
+        error: diagnostic.message,
+        diagnostic,
+        renderId: 2,
+        durationMs: 1,
+      }),
+    );
+    expect(result.current.diagnostics).toEqual([]);
+    expect(result.current.svg).toContain("fixed");
+  });
+
+  it("discards queued work when the source snapshot is removed", async () => {
+    vi.useFakeTimers();
+    const first = deferred<RenderResult>();
+    const renderSpy = vi.spyOn(plantUmlRenderer, "render").mockReturnValueOnce(first.promise);
+    const { result, rerender } = renderHook(
+      ({ source }) => useDiagramRenderer(source),
+      { initialProps: { source: FIRST_SOURCE as string | null } },
+    );
+    await flushTimers();
+    rerender({ source: SECOND_SOURCE });
+    await flushTimers();
+    rerender({ source: null });
+    await act(async () => first.resolve(success(1, "stale")));
+    expect(renderSpy).toHaveBeenCalledTimes(1);
+    expect(result.current.svg).toBe("");
+    expect(result.current.diagnostics).toEqual([]);
+  });
+
+  it("discards queued work superseded by an edit still being debounced", async () => {
+    vi.useFakeTimers();
+    const second = deferred<RenderResult>();
+    const renderSpy = vi.spyOn(plantUmlRenderer, "render")
+      .mockResolvedValueOnce(success(1, "first"))
+      .mockReturnValueOnce(second.promise)
+      .mockResolvedValueOnce(success(4, "latest"));
+    const { result, rerender } = renderHook(
+      ({ source }) => useDiagramRenderer(source),
+      { initialProps: { source: FIRST_SOURCE } },
+    );
+    await flushTimers();
+    rerender({ source: SECOND_SOURCE });
+    await flushTimers();
+    rerender({ source: THIRD_SOURCE });
+    await flushTimers();
+    const latest = FIRST_SOURCE + "\n' latest";
+    rerender({ source: latest });
+    await act(async () => second.resolve(success(2, "stale")));
+    expect(renderSpy).toHaveBeenCalledTimes(2);
+    await flushTimers();
+    expect(renderSpy).toHaveBeenCalledTimes(3);
+    expect(renderSpy).toHaveBeenLastCalledWith(latest, 4);
+    expect(result.current.svg).toContain("latest");
+  });
+
   it("reports an unexpected renderer exception and recovers on the next source", async () => {
     vi.useFakeTimers();
     const renderSpy = vi

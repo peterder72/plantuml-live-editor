@@ -174,4 +174,26 @@ describe("DiagramViewport", () => {
 
     expect(onToggleMembers).not.toHaveBeenCalled();
   });
+
+  it("keeps viewport actions local to the diagram", () => {
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 800,
+      height: 600,
+      right: 800,
+      bottom: 600,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    const { getByRole, getByTestId } = render(
+      <DiagramViewport svg={svg} renderRevision={1} />,
+    );
+
+    fireEvent.click(getByRole("button", { name: "Zoom in" }));
+    expect(getByTestId("diagram-transform")).toHaveAttribute("data-scale", "1.25");
+    fireEvent.click(getByRole("button", { name: "Reset view" }));
+    expect(getByTestId("diagram-transform")).toHaveAttribute("data-scale", "1");
+  });
 });

@@ -184,14 +184,14 @@ export function DiagramViewport({
     if (pointersRef.current.size === 0) setIsPanning(false);
   };
 
-  const zoomFromCenter = (factor: number) => {
+  const zoomFromCenter = useCallback((factor: number) => {
     const rect = viewportRef.current?.getBoundingClientRect();
     if (!rect) return;
     zoomAt(transform.scale * factor, {
       x: rect.width / 2,
       y: rect.height / 2,
     });
-  };
+  }, [transform.scale, zoomAt]);
 
   return (
     <div

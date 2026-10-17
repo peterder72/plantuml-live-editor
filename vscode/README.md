@@ -11,12 +11,15 @@ or `github.dev`.
 ## Usage
 
 1. Open a `.puml`, `.plantuml`, `.pu`, `.iuml`, or `.wsd` document.
-2. Run **PlantUML: Open Preview to the Side** from the Command Palette, or use
-   the preview button in the editor title.
-3. Keep editing in VS Code's native editor. The preview updates automatically.
+2. Use the automatically revealed **PlantUML Controls** view below the File
+   Explorer to manage live flags, named views, and wrapping selected source.
+3. Choose **Open Preview** in that view, run **PlantUML: Open Preview to the
+   Side**, or use the preview button in the editor title.
+4. Keep editing in VS Code's native editor. The preview updates automatically.
 
-Each document gets one reusable preview panel. Invalid edits show an error
-without discarding the last valid diagram.
+The extension keeps one reusable preview panel and one controls view following
+the most recently active PlantUML document. Invalid edits show an error without
+discarding the last valid diagram.
 
 ## Features
 
@@ -24,9 +27,10 @@ without discarding the last valid diagram.
   auto-closing behavior for every supported file extension.
 - Offline class, component, sequence, activity, and other diagrams supported by
   PlantUML's MIT browser engine.
-- Pointer-centered wheel zoom, touch pinch zoom, drag-to-pan, fit, and reset.
+- Pointer-centered wheel zoom, touch pinch zoom, drag-to-pan, zoom, fit, and
+  reset directly in the preview.
 - Persistent viewport position across ordinary rerenders.
-- SVG and PNG export.
+- SVG and PNG export from the preview canvas.
 - Click a rendered class to add or remove its `hide <name> members` directive.
 - Live boolean flags declared as `!$_live_NAME = %false()` or `%true()`.
 - Create and rename named flag views, with independent values stored safely in
@@ -34,6 +38,9 @@ without discarding the last valid diagram.
 - Select source lines in the native editor and use **Wrap selection** to place
   them inside the chosen live flag condition.
 - Render initialization, progress, duration, and error feedback.
+- Native syntax error squiggles and Problems entries for engine-reported source
+  lines while the preview is open. Diagnostics clear on edits, document changes,
+  and preview disposal; errors without a source location appear in render status.
 
 ## Privacy and Security
 
@@ -55,3 +62,81 @@ rejected. The extension does not collect telemetry.
 
 See the [source repository](https://github.com/peterder72/plantuml-live-editor)
 or [report an issue](https://github.com/peterder72/plantuml-live-editor/issues).
+
+## Copilot tools and automation
+
+In VS Code Copilot Chat, enable the extension's tools in the tool picker. You can
+ask Copilot to check a diagram, export an image, inspect flags/views, or open a
+preview. You can also explicitly reference `#plantumlValidate`,
+`#plantumlExport`, `#plantumlInspect`, and `#plantumlPreview`.
+
+| Tool | Inputs | Result |
+| --- | --- | --- |
+| `plantumlLive_validate` | `documentUri`, optional `view` | Validity, checked document version, and diagnostics with one-based lines (or `null` when unavailable) |
+| `plantumlLive_export` | `documentUri`, `outputUri`, optional `format`, `background`, `view`, `overwrite` | Saved artifact URI or render errors |
+| `plantumlLive_inspect` | `documentUri` | Flags and current values, named views, and active view |
+| `plantumlLive_preview` | `documentUri` | Opens the document in the preview |
+
+URIs must be absolute, for example `file:///Users/me/project/diagram.puml`.
+Validation/export read current editor contents, including unsaved changes. They
+use an isolated local renderer in a temporary panel that closes when finished;
+they do not require or replace the interactive preview. A source change during
+rendering fails the operation, so retry against the new version. Cancellation,
+closing the temporary panel, or the 60-second timeout ends the operation.
+
+Exports default to SVG with a transparent background. Set `format` to `png` or
+`background` to `white` when needed. The destination extension must match the
+format. Existing destinations require `overwrite: true`; source files cannot be
+export destinations. Export requires a trusted workspace. A named `view` renders
+that saved flag configuration without editing the source. Named-view checks
+return their diagnostics directly rather than changing Problems for the current
+source. Failed renders never export the last valid preview image.
+
+The Command Palette also offers **PlantUML: Check for Errors**, **PlantUML:
+Export Diagram**, and **PlantUML: Inspect Flags and Views**. Checking publishes
+Problems; inspection displays JSON in the **PlantUML Actions** output channel.
+Export prompts for format and destination. Saving source remains VS Code's
+normal **Save** operation.
+
+Other extensions can call `plantumlLive.validate`, `plantumlLive.export`, and
+`plantumlLive.inspect` with the same input object and receive the JSON result.
+`plantumlLive.openPreview` accepts an optional VS Code `Uri`.
+
+### VS Code tasks
+
+**Tasks: Run Task** discovers **PlantUML: validate workspace** for each workspace
+folder. It checks supported PlantUML files, excluding `node_modules` and `.git`.
+For repeatable file validation or export, add entries to `.vscode/tasks.json`:
+
+```json
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Check architecture",
+      "type": "plantumlLive",
+      "action": "validate",
+      "file": "docs/architecture.puml",
+      "problemMatcher": []
+    },
+    {
+      "label": "Export architecture",
+      "type": "plantumlLive",
+      "action": "export",
+      "file": "docs/architecture.puml",
+      "output": "docs/architecture.svg",
+      "format": "svg",
+      "background": "white",
+      "overwrite": true,
+      "problemMatcher": []
+    }
+  ]
+}
+```
+
+Task paths are relative to their workspace folder. Omit `file` on a validation
+task to check the workspace. Export tasks require both `file` and `output` and
+never prompt for a destination. Tasks print JSON results, update Problems for
+current-source checks, and exit with code 1 if any diagram fails (0 on success).
+The output directory must already exist. Tasks, commands, and tools all use the
+same local actions; no Java, PlantUML server, or runtime network access is added.

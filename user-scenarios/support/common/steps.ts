@@ -139,6 +139,23 @@ Then("the previous diagram width is preserved", async function (this: ScenarioWo
   await this.driver.expectDiagramWidthPreserved();
 });
 
-Then("the runtime network APIs are blocked", async function (this: ScenarioWorld) {
-  await this.driver.expectNetworkApisBlocked();
-});
+Then(
+  "the runtime network APIs are blocked",
+  async function (this: ScenarioWorld) {
+    await this.driver.expectNetworkApisBlocked();
+  },
+);
+
+Then(
+  "source line {int} is highlighted as an error",
+  async function (this: ScenarioWorld, line: number) {
+    await this.driver.expectSourceError(line);
+  },
+);
+
+Then(
+  "the source has no error highlights",
+  async function (this: ScenarioWorld) {
+    await this.driver.expectSourceError(null);
+  },
+);

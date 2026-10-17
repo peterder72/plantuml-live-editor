@@ -74,19 +74,33 @@ function inspect(): ScenarioCommandResult {
       document.querySelector<HTMLInputElement>("input[value='white']:checked")?.value ??
       document.querySelector<HTMLInputElement>("input[value='transparent']:checked")?.value ??
       "",
+    previewChromeVisible: Boolean(
+      document.querySelector(
+        ".preview-export-toolbar, .viewport-controls, .preview-hud",
+      ),
+    ),
+    previewStatusVisible: Boolean(document.querySelector(".preview-render-status")),
   };
 }
 
 async function panAndZoom() {
   const transform = required<HTMLElement>("[data-testid='diagram-transform']");
   const beforeZoom = transform.dataset.scale;
-  button("Zoom in").click();
+  const viewport = required<HTMLElement>("[data-testid='diagram-viewport']");
+  viewport.dispatchEvent(
+    new WheelEvent("wheel", {
+      bubbles: true,
+      cancelable: true,
+      clientX: 100,
+      clientY: 100,
+      deltaY: -300,
+    }),
+  );
   await waitFor(
     () => transform.dataset.scale !== beforeZoom,
     "zoom scale to change",
   );
 
-  const viewport = required<HTMLElement>("[data-testid='diagram-viewport']");
   const beforePan = transform.getAttribute("style");
   const originalCapture = viewport.setPointerCapture;
   viewport.setPointerCapture = () => undefined;
