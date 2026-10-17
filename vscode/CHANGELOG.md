@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0
+
+- Added VS Code Copilot tools and commands to validate diagrams, export SVG/PNG images, inspect live flags and named views, and open previews.
+- Added workspace validation and configurable validation/export tasks with JSON results and Problems integration.
+- Automation renders current unsaved source in an isolated offline renderer, supports named views, rejects stale results, and preserves the interactive preview.
+
 ## 0.6.0
 
 - Added source-line syntax error highlights, gutter markers, and diagnostic tooltips to the web editor.

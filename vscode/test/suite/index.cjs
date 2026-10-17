@@ -58,6 +58,133 @@ async function run() {
     new TextEncoder().encode("@startuml\nAlice -> Bob: Hello\n@enduml\n"),
   );
   const document = await vscode.workspace.openTextDocument(sourceUri);
+
+  // Production automation works without opening or replacing the preview.
+  const actionInput = { documentUri: sourceUri.toString() };
+  const inspection = await vscode.commands.executeCommand("plantumlLive.inspect", actionInput);
+  assert.equal(inspection.ok, true);
+  assert.equal(inspection.activeView, "Default");
+  assert.equal(extensionApi.getPreviewCount(), 0);
+  const validation = await vscode.commands.executeCommand("plantumlLive.validate", actionInput);
+  assert.equal(validation.ok, true);
+  assert.equal(validation.documentVersion, document.version);
+  assert.equal(extensionApi.getPreviewCount(), 0);
+  for (const format of ["svg", "png"]) {
+    const outputUri = sourceUri.with({ path: `${sourceUri.path}.${format}` });
+    const exportInput = { ...actionInput, outputUri: outputUri.toString(), format, background: "white" };
+    const exported = await vscode.commands.executeCommand("plantumlLive.export", exportInput);
+    assert.equal(exported.ok, true);
+    assert.equal(exported.outputUri, outputUri.toString());
+    const bytes = Buffer.from(await vscode.workspace.fs.readFile(outputUri));
+    if (format === "png") assert.equal(bytes.subarray(1, 4).toString(), "PNG");
+    else {
+      assert.match(bytes.toString(), /<svg/);
+      assert.match(bytes.toString(), /data-export-background="white"/);
+    }
+    await assert.rejects(vscode.commands.executeCommand("plantumlLive.export", exportInput), /exists/);
+    assert.equal((await vscode.commands.executeCommand("plantumlLive.export", { ...exportInput, overwrite: true })).ok, true);
+    await deleteTemporaryFile(outputUri);
+  }
+  const originalSource = document.getText();
+  const replaceAutomationSource = async (text) => {
+    const edit = new vscode.WorkspaceEdit();
+    edit.replace(sourceUri, new vscode.Range(document.positionAt(0), document.positionAt(document.getText().length)), text);
+    assert.equal(await vscode.workspace.applyEdit(edit), true);
+  };
+  await replaceAutomationSource("@startuml\nAlice -> Bob\nthis is invalid ???\n@enduml");
+  const invalid = await vscode.commands.executeCommand("plantumlLive.validate", actionInput);
+  assert.equal(invalid.ok, false);
+  assert.equal(invalid.diagnostics[0].line, 3);
+  assert.ok(vscode.languages.getDiagnostics(sourceUri).length);
+  const invalidOutput = sourceUri.with({ path: `${sourceUri.path}.invalid.svg` });
+  const failedExport = await vscode.commands.executeCommand("plantumlLive.export", { ...actionInput, outputUri: invalidOutput.toString() });
+  assert.equal(failedExport.ok, false);
+  await assert.rejects(vscode.workspace.fs.stat(invalidOutput));
+  await replaceAutomationSource(originalSource);
+  assert.equal(vscode.languages.getDiagnostics(sourceUri).length, 0);
+
+  const viewSource = "@startuml\n!$_live_DETAILS = %false()\nclass Base\n!if $_live_DETAILS\nclass Detail\n!endif\n@enduml\n/' @plantuml-live-editor views v2\n" + JSON.stringify({ activeView: "Default", views: { Default: { DETAILS: false }, Detailed: { DETAILS: true } } }) + "\n@end-plantuml-live-editor views '/";
+  await replaceAutomationSource(viewSource);
+  const viewState = await vscode.commands.executeCommand("plantumlLive.inspect", actionInput);
+  assert.equal(viewState.flags[0].value, false);
+  assert.equal(viewState.views.length, 2);
+  const viewOutput = sourceUri.with({ path: `${sourceUri.path}.view.svg` });
+  const viewExport = await vscode.commands.executeCommand("plantumlLive.export", { ...actionInput, outputUri: viewOutput.toString(), view: "Detailed" });
+  assert.equal(viewExport.ok, true);
+  assert.match(Buffer.from(await vscode.workspace.fs.readFile(viewOutput)).toString(), />Detail</);
+  assert.equal(document.getText(), viewSource, "named view export does not edit source");
+  await deleteTemporaryFile(viewOutput);
+  await replaceAutomationSource(originalSource);
+
+  const cancellation = new vscode.CancellationTokenSource();
+  cancellation.cancel();
+  await assert.rejects(vscode.lm.invokeTool("plantumlLive_validate", { input: actionInput }, cancellation.token));
+  cancellation.dispose();
+  const runningCancellation = new vscode.CancellationTokenSource();
+  const cancellationListener = vscode.window.tabGroups.onDidChangeTabs((event) => {
+    if (event.opened.some((tab) => tab.label === "PlantUML: Checking diagram")) runningCancellation.cancel();
+  });
+  try {
+    await assert.rejects(vscode.lm.invokeTool("plantumlLive_validate", { input: actionInput }, runningCancellation.token));
+  } finally {
+    cancellationListener.dispose();
+    runningCancellation.dispose();
+  }
+  await assert.rejects(vscode.commands.executeCommand("plantumlLive.validate", { ...actionInput, view: "Missing" }), /Unknown named view/);
+
+  let changeDuringRender;
+  const tabsListener = vscode.window.tabGroups.onDidChangeTabs((event) => {
+    if (event.opened.some((tab) => tab.label === "PlantUML: Checking diagram")) {
+      changeDuringRender = replaceAutomationSource(`${originalSource}\n' edited while checking`);
+    }
+  });
+  try {
+    await assert.rejects(vscode.commands.executeCommand("plantumlLive.validate", actionInput), /changed/);
+    await changeDuringRender;
+  } finally { tabsListener.dispose(); }
+  await replaceAutomationSource(originalSource);
+
+  const tasks = await vscode.tasks.fetchTasks({ type: "plantumlLive" });
+  assert.ok(tasks.length, "workspace validation task is discoverable");
+  const runTask = async (task) => {
+    let listener;
+    let timeout;
+    const finished = new Promise((resolve, reject) => {
+      timeout = setTimeout(() => reject(new Error("Task did not finish")), WAIT_TIMEOUT);
+      listener = vscode.tasks.onDidEndTaskProcess((event) => {
+        if (event.execution.task.definition.type === "plantumlLive") resolve(event.exitCode);
+      });
+    });
+    try {
+      await vscode.tasks.executeTask(task);
+      return await finished;
+    } finally { listener.dispose(); clearTimeout(timeout); }
+  };
+  assert.equal(await runTask(tasks[0]), 0, "validation task exits successfully");
+  await replaceAutomationSource("@startuml\nAlice -> Bob\nthis is invalid ???\n@enduml");
+  assert.equal(await runTask(tasks[0]), 1, "validation task reports invalid unsaved source");
+  await replaceAutomationSource(originalSource);
+  const folder = vscode.workspace.workspaceFolders[0];
+  const taskOutput = sourceUri.with({ path: `${sourceUri.path}.task.svg` });
+  await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(folder.uri, ".vscode"));
+  await vscode.workspace.fs.writeFile(vscode.Uri.joinPath(folder.uri, ".vscode/tasks.json"), new TextEncoder().encode(JSON.stringify({ version: "2.0.0", tasks: [{ label: "Export test", type: "plantumlLive", action: "export", file: path.basename(sourceUri.fsPath), output: path.basename(taskOutput.fsPath), problemMatcher: [] }] })));
+  let exportTask;
+  const taskDeadline = Date.now() + WAIT_TIMEOUT;
+  while (!exportTask && Date.now() < taskDeadline) {
+    const configuredTasks = await vscode.tasks.fetchTasks({ type: "plantumlLive" });
+    exportTask = configuredTasks.find((task) => task.definition.action === "export");
+    if (!exportTask) await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  assert.ok(exportTask, "configured export task is discoverable");
+  assert.equal(await runTask(exportTask), 0, "configured export task resolves and writes output");
+  assert.match(Buffer.from(await vscode.workspace.fs.readFile(taskOutput)).toString(), /<svg/);
+  await deleteTemporaryFile(taskOutput);
+  const tools = vscode.lm.tools.filter((tool) => tool.name.startsWith("plantumlLive_"));
+  assert.equal(tools.length, 4, "four production tools are registered");
+  const toolResult = await vscode.lm.invokeTool("plantumlLive_inspect", { input: actionInput });
+  assert.equal(JSON.parse(toolResult.content[0].value).ok, true);
+  await assert.rejects(vscode.commands.executeCommand("plantumlLive.export", { ...actionInput, outputUri: sourceUri.toString(), overwrite: true }), /source file/);
+
   const editor = await vscode.window.showTextDocument(document);
   assert.equal(vscode.window.activeTextEditor?.document, document);
   assert.equal(document.languageId, "plantuml", ".puml is recognized as PlantUML");
@@ -104,6 +231,12 @@ async function run() {
   assert.equal(surfaceState.previewChromeVisible, true, "diagram actions render on the preview");
   assert.equal(surfaceState.previewStatusVisible, true, "preview render status is on the canvas");
   assert.equal(extensionApi.getControlsState().previewAvailable, true);
+  const movedPreview = await extensionApi.runPreviewScenario({ action: "panAndZoom" });
+  assert.equal((await vscode.commands.executeCommand("plantumlLive.validate", actionInput)).ok, true);
+  const afterAutomation = await extensionApi.runPreviewScenario({ action: "inspect" });
+  assert.equal(afterAutomation.transformStyle, movedPreview.transformStyle, "automation preserves preview transform");
+  assert.equal(afterAutomation.svgFingerprint, movedPreview.svgFingerprint, "automation preserves preview SVG");
+
 
   await vscode.commands.executeCommand("workbench.action.closeSidebar");
   await waitFor(() => !extensionApi.getControlsState().visible, "the sidebar to close");

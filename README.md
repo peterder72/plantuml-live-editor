@@ -7,9 +7,15 @@ TeaVM browser engine. Graphviz WASM is embedded in the final HTML.
 A public instance is available at
 [peterder72.github.io/plantuml-live-editor](https://peterder72.github.io/plantuml-live-editor/).
 
+## Release 0.7.0
+
+Adds VS Code Copilot tools, validation/export commands, and workspace tasks.
+See the [automation guide](vscode/README.md#copilot-tools-and-automation) for usage
+and [CHANGELOG.json](CHANGELOG.json) for the full release history.
+
 ## Syntax diagnostics
 
-Version 0.6.0 highlights syntax errors on the reported source line in the web
+The editor highlights syntax errors on the reported source line in the web
 editor, with a gutter marker and a hover tooltip. VS Code shows native error
 squiggles and Problems entries while the preview is open. Diagnostics clear on
 edits and document changes; stale render results cannot mark a newer snapshot.
@@ -124,6 +130,21 @@ named views, and wrapping selected source. Use **Open Preview** there, the
 editor-title button, or **PlantUML: Open Preview to the Side** to open the
 diagram. Viewport actions, export, render status, and interaction guidance sit
 directly on the preview canvas. Both webviews remain fully offline.
+
+### Copilot tools and automation
+
+VS Code now provides Copilot tools to validate PlantUML, export SVG/PNG images,
+inspect live flags and named views, and open previews. The Command Palette also
+includes **PlantUML: Check for Errors**, **PlantUML: Export Diagram**, and
+**PlantUML: Inspect Flags and Views**.
+
+Validation and export use current unsaved source and an isolated offline renderer,
+preserving the interactive preview and viewport. Named views can be rendered
+without editing source. Workspace validation and configurable validation/export
+tasks support repeatable checks and image generation.
+
+See the [extension automation guide](vscode/README.md#copilot-tools-and-automation)
+for tool inputs, export options, and task configuration.
 
 ## Architecture
 

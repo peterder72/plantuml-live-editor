@@ -2,7 +2,7 @@
   "name": "plantuml-live-editor",
   "displayName": "PlantUML Live Editor",
   "description": "Private, offline PlantUML preview with live flags, named views, pan, zoom, and SVG/PNG export.",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "publisher": "peterder72",
   "license": "SEE LICENSE IN LICENSE",
   "icon": "images/icon.png",
@@ -42,7 +42,8 @@
   "activationEvents": [
     "onLanguage:plantuml",
     "onCommand:plantumlLive.openPreview",
-    "onView:plantumlLive.controls"
+    "onView:plantumlLive.controls",
+    "onTaskType:plantumlLive"
   ],
   "extensionKind": [
     "ui"
@@ -84,6 +85,18 @@
         "command": "plantumlLive.openPreview",
         "title": "PlantUML: Open Preview to the Side",
         "icon": "$(preview)"
+      },
+      {
+        "command": "plantumlLive.validate",
+        "title": "PlantUML: Check for Errors"
+      },
+      {
+        "command": "plantumlLive.export",
+        "title": "PlantUML: Export Diagram"
+      },
+      {
+        "command": "plantumlLive.inspect",
+        "title": "PlantUML: Inspect Flags and Views"
       }
     ],
     "views": {
@@ -104,7 +117,171 @@
           "when": "resourceExtname =~ /\\.(puml|plantuml|pu|iuml|wsd)$/"
         }
       ]
-    }
+    },
+    "languageModelTools": [
+      {
+        "name": "plantumlLive_validate",
+        "toolReferenceName": "plantumlValidate",
+        "displayName": "Validate PlantUML",
+        "canBeReferencedInPrompt": true,
+        "modelDescription": "Check current PlantUML source with the bundled offline engine and return versioned diagnostics. Use after editing; absence of Problems does not prove validity. Does not save or modify source.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "documentUri": {
+              "type": "string",
+              "description": "Absolute URI of the PlantUML document. Uses its current unsaved editor contents."
+            },
+            "view": {
+              "type": "string",
+              "description": "Optional existing named view to render without modifying source. Omit to check current source."
+            }
+          },
+          "required": [
+            "documentUri"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "plantumlLive_export",
+        "toolReferenceName": "plantumlExport",
+        "displayName": "Export PlantUML",
+        "canBeReferencedInPrompt": true,
+        "modelDescription": "Render current PlantUML source and save SVG or PNG to an explicit output URI. Fails on diagram errors or source changes; never exports a stale preview. Remote resources are unsupported. Does not save source.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "documentUri": {
+              "type": "string",
+              "description": "Absolute URI of the PlantUML document. Uses its current unsaved editor contents."
+            },
+            "view": {
+              "type": "string",
+              "description": "Optional existing named view to render without modifying source. Omit to check current source."
+            },
+            "outputUri": {
+              "type": "string",
+              "description": "Absolute destination URI ending in the chosen format. Must not be a PlantUML source file."
+            },
+            "format": {
+              "type": "string",
+              "enum": [
+                "svg",
+                "png"
+              ],
+              "description": "Image format, defaults to svg."
+            },
+            "background": {
+              "type": "string",
+              "enum": [
+                "transparent",
+                "white"
+              ],
+              "description": "Image background, defaults to transparent."
+            },
+            "overwrite": {
+              "type": "boolean",
+              "description": "Explicitly allow replacing an existing destination. Defaults to false."
+            }
+          },
+          "required": [
+            "documentUri",
+            "outputUri"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "plantumlLive_inspect",
+        "toolReferenceName": "plantumlInspect",
+        "displayName": "Inspect PlantUML Flags and Views",
+        "canBeReferencedInPrompt": true,
+        "modelDescription": "Read live flags, values, named views, and active view without rendering or modifying source.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "documentUri": {
+              "type": "string",
+              "description": "Absolute URI of the PlantUML document. Uses its current unsaved editor contents."
+            }
+          },
+          "required": [
+            "documentUri"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "plantumlLive_preview",
+        "toolReferenceName": "plantumlPreview",
+        "displayName": "Open PlantUML Preview",
+        "canBeReferencedInPrompt": true,
+        "modelDescription": "Open a PlantUML document in the local preview to show it to the user. Use validate to check errors.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "documentUri": {
+              "type": "string",
+              "description": "Absolute URI of the PlantUML document. Uses its current unsaved editor contents."
+            }
+          },
+          "required": [
+            "documentUri"
+          ],
+          "additionalProperties": false
+        }
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "plantumlLive",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "validate",
+              "export"
+            ]
+          },
+          "file": {
+            "type": "string",
+            "description": "Source path relative to workspace folder. Omit to validate all PlantUML files."
+          },
+          "output": {
+            "type": "string",
+            "description": "Export path relative to workspace folder. Required for export."
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "svg",
+              "png"
+            ],
+            "description": "Image format, defaults to svg."
+          },
+          "background": {
+            "type": "string",
+            "enum": [
+              "transparent",
+              "white"
+            ],
+            "description": "Image background, defaults to transparent."
+          },
+          "overwrite": {
+            "type": "boolean",
+            "description": "Explicitly allow replacing an existing destination. Defaults to false."
+          },
+          "view": {
+            "type": "string",
+            "description": "Existing named view to render without modifying source."
+          }
+        }
+      }
+    ]
   },
   "files": [
     "dist",

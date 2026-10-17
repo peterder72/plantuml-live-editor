@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { PlantUmlActions, registerAutomation } from "./automation";
 import { currentSourceDiagnostics } from "../../src/vscode/sourceDiagnostics";
 import type {
   DocumentStateMessage,
@@ -282,8 +283,8 @@ class DocumentSession {
   followDocument(document: vscode.TextDocument) {
     if (!isPlantUmlDocument(document)) return;
     const changed = this.document?.uri.toString() !== document.uri.toString();
-    if (changed || this.document?.version !== document.version)
-      this.diagnostics.clear();
+    if ((changed || this.document?.version !== document.version) && this.document)
+      this.diagnostics.delete(this.document.uri);
     this.document = document;
     if (changed) {
       this.lastRendered = undefined;
@@ -303,7 +304,7 @@ class DocumentSession {
   detachPreview(preview: PreviewPanel) {
     if (this.preview !== preview) return;
     this.preview = undefined;
-    this.diagnostics.clear();
+    if (this.document) this.diagnostics.delete(this.document.uri);
     void this.controls.postMessage({
       type: "previewAvailability",
       available: false,
@@ -533,8 +534,8 @@ export function activate(context: vscode.ExtensionContext) {
     void sessionRef.current?.handleMessage("controls", message);
   });
 
-  const openPreview = () => {
-    const activeDocument = vscode.window.activeTextEditor?.document;
+  const openPreview = (targetDocument?: vscode.TextDocument) => {
+    const activeDocument = targetDocument ?? vscode.window.activeTextEditor?.document;
     if (activeDocument && isPlantUmlDocument(activeDocument)) {
       session.followDocument(activeDocument);
     }
@@ -574,7 +575,7 @@ export function activate(context: vscode.ExtensionContext) {
   sessionRef.current = session;
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(CONTROLS_VIEW_ID, controls),
-    vscode.commands.registerCommand(PREVIEW_COMMAND, openPreview),
+    vscode.commands.registerCommand(PREVIEW_COMMAND, async (uri?: vscode.Uri) => openPreview(uri instanceof vscode.Uri ? await vscode.workspace.openTextDocument(uri) : undefined)),
     vscode.workspace.onDidCloseTextDocument((document) =>
       diagnostics.delete(document.uri),
     ),
@@ -597,6 +598,14 @@ export function activate(context: vscode.ExtensionContext) {
       }
     }),
   );
+
+  registerAutomation(context, new PlantUmlActions(
+    context,
+    (webview) => getWebviewHtml(context, webview, "webview", "webview.js", true, "PlantUML Automation"),
+    diagnostics,
+    openPreview,
+    () => session.getDocument(),
+  ));
 
   const activeDocument = vscode.window.activeTextEditor?.document;
   if (activeDocument && isPlantUmlDocument(activeDocument)) {
