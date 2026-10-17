@@ -349,9 +349,13 @@ async function run() {
     false,
     "closing the preview restores the Controls open action",
   );
+  // Closing a webview does not guarantee source-editor focus on every platform.
+  // Reopen from a non-PlantUML editor to exercise the remembered-document fallback.
+  await vscode.window.showTextDocument(unsupportedDocument);
   assert.equal(
-    vscode.window.activeTextEditor?.document.uri.toString(),
+    extensionApi.getControlsState().documentUri,
     secondSourceUri.toString(),
+    "closing the preview preserves the followed document",
   );
 
   await vscode.commands.executeCommand(PREVIEW_COMMAND);
