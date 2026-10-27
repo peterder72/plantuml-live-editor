@@ -71,19 +71,18 @@ describe("getPlantUmlDiagnostic", () => {
   it("locates a native Autofac validation error without a Syntax Error footer", () => {
     const source = [
       "@startautofac",
-      'composition "Unknown scope" {',
-      "  lifetime system root { }",
-      "  resolve r: IFoo from missing",
-      "}",
+      'title Unknown scope',
+      "lifetime system",
+      "event r on missing : Resolve IFoo",
       "@endautofac",
     ].join("\n");
     const svg = `<svg xmlns="http://www.w3.org/2000/svg">
       <text>PlantUML version 1.2026.7</text>
       <text>[From textarea (line 4) ]</text>
       <text>@startautofac</text>
-      <text>composition "Unknown scope" {</text>
-      <text>  lifetime system root { }</text>
-      <text>  resolve r: IFoo from missing</text>
+      <text>title Unknown scope</text>
+      <text>lifetime system</text>
+      <text>event r on missing : Resolve IFoo</text>
       <text>Unknown lifetime 'missing' (Assumed diagram type: autofac)</text>
     </svg>`;
 

@@ -10,7 +10,7 @@ or `github.dev`.
 
 ## Autofac pre-release channel
 
-The Autofac preview is published as numeric version **0.8.0**, marked as a
+The Autofac preview is published as numeric version **0.9.0**, marked as a
 Marketplace **pre-release**. Stable-channel users do not receive it as an
 automatic update. To opt in, open this extension in VS Code's Extensions view
 and choose **Switch to Pre-Release Version**. Choose **Switch to Release Version**
@@ -21,11 +21,18 @@ workflow described in the
 [pre-release publishing guide](https://github.com/peterder72/plantuml-live-editor/tree/feature/autofac#opt-in-autofac-pre-release-publishing).
 The ordinary version-tag publishing path remains stable-only.
 
-This prerelease bundles `@peterder72/plantuml-core@1.2026.7-autofac.1` and is
+This prerelease bundles `@peterder72/plantuml-core@1.2026.7-autofac.2` and is
 distributed under **GPL-3.0-or-later**. The original editor's MIT copyright and
 license notice are retained in `THIRD_PARTY_NOTICES.md`; the complete GPL is
 packaged in `LICENSE`. Corresponding source and build instructions are linked
 in those notices. Generated diagram images are not covered by the engine's GPL.
+
+**Breaking language update:** 0.9.0 removes the old `composition`, `resolve`,
+`expect` and `invoke` grammar. Rewrite older diagrams using explicit lifecycle
+transitions and ordinary events/arrows; success, failure and recursion are label
+text, not special outcomes. Start with the
+[current sample](https://github.com/peterder72/plantuml-live-editor/blob/feature/autofac/examples/autofac.puml)
+or the [engine showcases](https://github.com/peterder72/plantuml-extended/tree/feature/autofac/autofac-examples).
 
 ## Usage
 
@@ -46,9 +53,9 @@ discarding the last valid diagram.
   auto-closing behavior for every supported file extension.
 - Offline class, component, sequence, activity, and other diagrams supported by
   the bundled PlantUML Autofac browser engine.
-- Autofac lifetime diagrams with `@startautofac`: construction and active scopes,
-  module provenance, authored resolve outcomes, cycles, and disposal. The engine
-  draws declared facts; it does not simulate an Autofac container.
+- Autofac lifetime diagrams with `@startautofac`: explicit construction, object
+  identities, `create`/`destroy` transitions, marker events, and native PlantUML
+  arrows, groups, activations and notes. The engine does not simulate a container.
 - Pointer-centered wheel zoom, touch pinch zoom, drag-to-pan, zoom, fit, and
   reset directly in the preview.
 - Persistent viewport position across ordinary rerenders.

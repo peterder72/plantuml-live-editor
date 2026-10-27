@@ -10,8 +10,8 @@ its notice retained below.
 
 Corresponding source and build instructions are available from the
 [editor's feature/autofac branch](https://github.com/peterder72/plantuml-live-editor/tree/feature/autofac)
-and the [bundled engine source](https://github.com/peterder72/plantuml-extended/tree/f5956b831).
-The exact engine package is `@peterder72/plantuml-core@1.2026.7-autofac.1`.
+and the [bundled engine source](https://github.com/peterder72/plantuml-extended/tree/9214f9eff).
+The exact engine package is `@peterder72/plantuml-core@1.2026.7-autofac.2`.
 
 | Project | License |
 | --- | --- |

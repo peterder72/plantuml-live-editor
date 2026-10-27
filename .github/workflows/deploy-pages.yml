@@ -19,8 +19,8 @@ permissions:
   contents: read
 
 env:
-  AUTOFAC_PRERELEASE_VERSION: "0.8.0"
-  AUTOFAC_PRERELEASE_ENGINE: "1.2026.7-autofac.1"
+  AUTOFAC_PRERELEASE_VERSION: "0.9.0"
+  AUTOFAC_PRERELEASE_ENGINE: "1.2026.7-autofac.2"
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -191,7 +191,7 @@ jobs:
                 extension.version !== process.env.AUTOFAC_PRERELEASE_VERSION ||
                 root.dependencies["@peterder72/plantuml-core"] !== process.env.AUTOFAC_PRERELEASE_ENGINE ||
                 engine.version !== process.env.AUTOFAC_PRERELEASE_ENGINE) {
-              throw new Error("Autofac pre-release requires extension 0.8.0 and the pinned Autofac engine");
+              throw new Error("Autofac pre-release requires extension 0.9.0 and the pinned Autofac engine");
             }
           '
 

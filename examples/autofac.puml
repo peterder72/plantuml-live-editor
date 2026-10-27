@@ -1,0 +1,19 @@
+@startautofac
+title Requests and explicit object creation
+
+lifetime "System" as system
+create system
+lifetime "Request" as request from system {
+    register worker: IWorker -> Worker sharing perScope
+}
+create request
+object "worker1 : Worker" as worker1 ownedBy request
+
+event work on request : Resolve IWorker
+create worker1
+worker1 --> request : returns worker1
+work ..> request.worker
+
+destroy worker1
+destroy request
+@endautofac

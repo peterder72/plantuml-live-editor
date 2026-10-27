@@ -8,3 +8,5 @@ test-results/
 output/
 .DS_Store
 *.vsix
+# Generated showcase renderings; retain the editable PlantUML sources.
+/examples/*.svg

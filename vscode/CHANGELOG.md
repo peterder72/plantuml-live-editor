@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.0
+
+- Breaking Autofac pre-release: replaced the scenario-specific composition/resolve/expect/invoke language with generic lifetime and object declarations, explicit create/destroy transitions, marker events, and native PlantUML arrows, groups, activations, and notes. Previous Autofac sources must be migrated.
+- Show selection and object relationships with explicit static references; outcomes, recursion, deferred calls, and disposal failures are authored labels and markers, never inferred container behavior.
+- Bundled exact @peterder72/plantuml-core 1.2026.7-autofac.2. The prerelease remains GPL-3.0-or-later with retained MIT component notices and corresponding-source links.
+- Updated the Autofac sample and located-error fixture for the new language; Marketplace publication remains opt-in and pre-release-only.
+
 ## 0.8.0
 
 - Pre-release: added Autofac lifetime diagrams with module provenance, declared resolve outcomes, scope ownership, cycles, and disposal diagnostics.

@@ -126,7 +126,7 @@ GitHub releases use the matching JSON entry as their release notes.
 
 ### Opt-in Autofac pre-release publishing
 
-Autofac is released as VS Code version **0.8.0** on the Marketplace's
+Autofac is released as VS Code version **0.9.0** on the Marketplace's
 **pre-release channel**, not as a stable update. VS Code requires a numeric
 `major.minor.patch` extension version; `--pre-release` marks the channel rather
 than adding a SemVer suffix. Existing stable-channel users are not automatically
@@ -138,8 +138,15 @@ This prerelease distribution uses **GPL-3.0-or-later**, matching the bundled
 Autofac engine. The extension includes the full GPL and retains the editor's
 original MIT notice and third-party attributions. See
 [`vscode/THIRD_PARTY_NOTICES.md`](vscode/THIRD_PARTY_NOTICES.md) for corresponding
-source links. This does not change the licensing or engine of existing stable
-Marketplace versions.
+source links. This does not change the licensing or engine of existing stable Marketplace versions.
+
+Version 0.9.0 is a breaking language update: the old `composition`, `resolve`,
+`expect` and `invoke` statements are removed. Declare lifetimes and objects,
+author `create`/`destroy` transitions, and use marker events plus native PlantUML
+arrows, groups and notes. Outcomes are ordinary labels, not engine predictions.
+See [`examples/autofac.puml`](examples/autofac.puml) and the
+[engine examples](https://github.com/peterder72/plantuml-extended/tree/feature/autofac/autofac-examples)
+for the current grammar. Sources written for extension 0.8.0 require migration.
 
 After pushing `feature/autofac`, a maintainer can explicitly dispatch the
 existing default-branch workflow at that feature ref:
@@ -152,8 +159,8 @@ gh workflow run deploy-pages.yml \
 ```
 
 The boolean `publish_prerelease` input defaults to `false`. Publication requires
-`feature/autofac`, extension/root version `0.8.0`, and the exact bundled engine
-dependency `@peterder72/plantuml-core@1.2026.7-autofac.1`. Quality/unit, web-browser,
+`feature/autofac`, extension/root version `0.9.0`, and the exact bundled engine
+dependency `@peterder72/plantuml-core@1.2026.7-autofac.2`. Quality/unit, web-browser,
 and VS Code integration/scenario jobs must all pass. The VS Code job packages
 its verified build with `vsce package --pre-release`; the publisher downloads
 that run's `autofac-prerelease-vsix` artifact, checks its checksum, identity,
