@@ -164,17 +164,34 @@ export function getPlantUmlDiagnostic(
   const labels = Array.from(parsed.querySelectorAll("text"), (element) =>
     element.textContent?.replace(/\s+/g, " ").trim() ?? "",
   );
-  const location = labels
-    .map((label) => /^\[From .+?\(line\s+(-?\d+)\)\s*\]$/i.exec(label))
-    .find((match) => match !== null);
-  const detail = labels.find((label) => /^Syntax Error\?(?:\s|$)/i.test(label));
-  // Require both signals so ordinary diagram labels are not treated as errors.
-  if (!location || !detail) return null;
+  const locationIndex = labels.findIndex((label) =>
+    /^\[From .+?\(line\s+(-?\d+)\)\s*\]$/i.test(label),
+  );
+  if (locationIndex < 0) return null;
+  const location = /^\[From .+?\(line\s+(-?\d+)\)\s*\]$/i.exec(
+    labels[locationIndex],
+  );
+  if (!location) return null;
+  const sourceLines = source.split(/\r\n|\r|\n/);
+  const opener = sourceLines.find((line) => /^\s*@start\w+\b/i.test(line));
+  if (!opener) return null;
+  const traceOpener = (
+    opener.length > 120 ? `${opener.slice(0, 120)} ...` : opener
+  ).replace(/\s+/g, " ").trim();
+  // PSystemError renders a location banner, a literal source trace (starting
+  // with @start...), then its error message. The browser API supplies no typed
+  // error metadata. Match this envelope, not message wording or text colors:
+  // native diagrams can report specific errors instead of "Syntax Error?".
+  const traceIndex = labels.findIndex(
+    (label, index) => index > locationIndex && label === traceOpener,
+  );
+  const detail = labels[labels.length - 1];
+  if (traceIndex < 0 || traceIndex >= labels.length - 1 || !detail) return null;
   const reportedLine = Number(location[1]);
   const line =
     Number.isSafeInteger(reportedLine) &&
     reportedLine > 0 &&
-    reportedLine <= source.split(/\r\n|\r|\n/).length
+    reportedLine <= sourceLines.length
       ? reportedLine
       : null;
   return {

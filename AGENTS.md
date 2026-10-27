@@ -41,5 +41,5 @@ bun run test:e2e
 ## Constraints
 
 - PlantUML browser output is currently limited to 8192 pixels per dimension.
-- The MIT browser engine does not include Sudoku diagrams.
+- The Autofac prerelease bundles a GPL-3.0-or-later browser engine; retain its license and corresponding-source notices.
 - Remote includes and resources are unsupported in the offline MVP.

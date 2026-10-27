@@ -3,9 +3,19 @@
 PlantUML Live Editor includes bundled third-party software. The following
 projects retain their respective copyrights and licenses.
 
+The Autofac prerelease bundles a GPL-3.0-or-later PlantUML engine. The combined
+VSIX distribution is provided under GPL-3.0-or-later; the complete license is
+included in `LICENSE`. The original editor source remains MIT-licensed, with
+its notice retained below.
+
+Corresponding source and build instructions are available from the
+[editor's feature/autofac branch](https://github.com/peterder72/plantuml-live-editor/tree/feature/autofac)
+and the [bundled engine source](https://github.com/peterder72/plantuml-extended/tree/f5956b831).
+The exact engine package is `@peterder72/plantuml-core@1.2026.7-autofac.1`.
+
 | Project | License |
 | --- | --- |
-| [PlantUML browser engine](https://github.com/plantuml/plantuml) © Arnaud Roques and contributors | MIT |
+| [PlantUML Autofac browser engine](https://github.com/peterder72/plantuml-extended) © Arnaud Roques and contributors | GPL-3.0-or-later |
 | [Viz.js](https://github.com/mdaines/viz-js) © Michael Daines and contributors, including its Graphviz build and the dependencies identified by Viz.js | MIT and the licenses identified in the bundled distribution |
 | [CodeMirror](https://github.com/codemirror) © Marijn Haverbeke and contributors | MIT |
 | [Lezer](https://github.com/lezer-parser) © Marijn Haverbeke and contributors | MIT |
@@ -19,6 +29,30 @@ Required copyright and license text is retained in the generated JavaScript
 bundle. PlantUML's bundled distribution also identifies the licenses and
 attributions for Graphviz, Expat, OpenIconic, sprites, themes, emoji, and other
 assets embedded in its browser engine.
+
+## Original PlantUML Live Editor source
+
+MIT License
+
+Copyright (c) 2026 peterder72
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 ## VS Code PlantUML grammar
 

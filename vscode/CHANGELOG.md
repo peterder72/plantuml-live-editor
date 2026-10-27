@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.0
+
+- Pre-release: added Autofac lifetime diagrams with module provenance, declared resolve outcomes, scope ownership, cycles, and disposal diagnostics.
+- Bundled @peterder72/plantuml-core 1.2026.7-autofac.1. This prerelease distribution is GPL-3.0-or-later; existing MIT component notices are retained.
+- Recognize native PlantUML error diagrams, including Autofac reference errors, in validation, Problems, and export commands.
+- Preserve generated TeaVM control flow by avoiding re-minification in offline web and VS Code preview builds.
+- Added a guarded opt-in Marketplace prerelease path without changing stable-channel publishing or GitHub Pages deployment.
+
 ## 0.7.0
 
 - Added VS Code Copilot tools and commands to validate diagrams, export SVG/PNG images, inspect live flags and named views, and open previews.

@@ -34,6 +34,8 @@ export default defineConfig({
   ],
   build: {
     target: "es2022",
+    // TeaVM already optimizes its output; re-minification can invalidate labels.
+    minify: false,
     cssCodeSplit: false,
     assetsInlineLimit: Number.MAX_SAFE_INTEGER,
     chunkSizeWarningLimit: 20_000,

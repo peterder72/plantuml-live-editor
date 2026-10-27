@@ -12,6 +12,8 @@ export default defineConfig({
   },
   build: {
     target: "es2022",
+    // Preserve the generated TeaVM engine's labelled control flow.
+    minify: false,
     outDir: resolve(currentDirectory, "dist/webview"),
     emptyOutDir: true,
     cssCodeSplit: false,

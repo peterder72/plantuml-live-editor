@@ -8,6 +8,25 @@ The extension currently supports the desktop edition of VS Code. It is not a
 web extension and does not run in browser-hosted editors such as `vscode.dev`
 or `github.dev`.
 
+## Autofac pre-release channel
+
+The Autofac preview is published as numeric version **0.8.0**, marked as a
+Marketplace **pre-release**. Stable-channel users do not receive it as an
+automatic update. To opt in, open this extension in VS Code's Extensions view
+and choose **Switch to Pre-Release Version**. Choose **Switch to Release Version**
+to return to the stable channel.
+
+Maintainers publish only through the explicitly enabled, verified feature-branch
+workflow described in the
+[pre-release publishing guide](https://github.com/peterder72/plantuml-live-editor/tree/feature/autofac#opt-in-autofac-pre-release-publishing).
+The ordinary version-tag publishing path remains stable-only.
+
+This prerelease bundles `@peterder72/plantuml-core@1.2026.7-autofac.1` and is
+distributed under **GPL-3.0-or-later**. The original editor's MIT copyright and
+license notice are retained in `THIRD_PARTY_NOTICES.md`; the complete GPL is
+packaged in `LICENSE`. Corresponding source and build instructions are linked
+in those notices. Generated diagram images are not covered by the engine's GPL.
+
 ## Usage
 
 1. Open a `.puml`, `.plantuml`, `.pu`, `.iuml`, or `.wsd` document.
@@ -26,7 +45,10 @@ discarding the last valid diagram.
 - Built-in PlantUML syntax highlighting and native comment, bracket, and
   auto-closing behavior for every supported file extension.
 - Offline class, component, sequence, activity, and other diagrams supported by
-  PlantUML's MIT browser engine.
+  the bundled PlantUML Autofac browser engine.
+- Autofac lifetime diagrams with `@startautofac`: construction and active scopes,
+  module provenance, authored resolve outcomes, cycles, and disposal. The engine
+  draws declared facts; it does not simulate an Autofac container.
 - Pointer-centered wheel zoom, touch pinch zoom, drag-to-pan, zoom, fit, and
   reset directly in the preview.
 - Persistent viewport position across ordinary rerenders.
@@ -54,7 +76,7 @@ rejected. The extension does not collect telemetry.
 ## Known Limitations
 
 - Browser-rendered diagrams are limited to 8192 × 8192 pixels.
-- Sudoku is not included in PlantUML's MIT browser engine.
+- Sudoku is not included in the bundled browser build.
 - Remote `!include` files and network resources are intentionally unsupported.
 - The initial render can take a moment while the embedded engine initializes.
 

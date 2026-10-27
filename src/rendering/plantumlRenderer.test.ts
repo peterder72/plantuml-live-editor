@@ -59,7 +59,7 @@ describe("renderToSvg", () => {
 describe("getPlantUmlDiagnostic", () => {
   it("recognizes PlantUML syntax-error SVG output", () => {
     const svg =
-      '<svg xmlns="http://www.w3.org/2000/svg"><text>[From textarea (line 2) ]</text><text>Syntax Error? (Assumed diagram type: sequence)</text></svg>';
+      '<svg xmlns="http://www.w3.org/2000/svg"><text>[From textarea (line 2) ]</text><text>@startuml</text><text>invalid</text><text>Syntax Error? (Assumed diagram type: sequence)</text></svg>';
 
     expect(getPlantUmlDiagnostic(svg, "@startuml\ninvalid\n@enduml")).toEqual({
       line: 2,
@@ -68,14 +68,88 @@ describe("getPlantUmlDiagnostic", () => {
     });
   });
 
-  it.each(["Syntax Error?", "Unsupported diagram type", "[From textarea (line 2)]"])(
-    "accepts diagnostic phrases as ordinary labels: %s",
-    (label) => {
-      expect(getPlantUmlDiagnostic(
-        `<svg xmlns="http://www.w3.org/2000/svg"><text>${label}</text></svg>`,
-        "@startuml\n@enduml",
+  it("locates a native Autofac validation error without a Syntax Error footer", () => {
+    const source = [
+      "@startautofac",
+      'composition "Unknown scope" {',
+      "  lifetime system root { }",
+      "  resolve r: IFoo from missing",
+      "}",
+      "@endautofac",
+    ].join("\n");
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg">
+      <text>PlantUML version 1.2026.7</text>
+      <text>[From textarea (line 4) ]</text>
+      <text>@startautofac</text>
+      <text>composition "Unknown scope" {</text>
+      <text>  lifetime system root { }</text>
+      <text>  resolve r: IFoo from missing</text>
+      <text>Unknown lifetime 'missing' (Assumed diagram type: autofac)</text>
+    </svg>`;
+
+    expect(getPlantUmlDiagnostic(svg, source)).toEqual({
+      line: 4,
+      message:
+        "Syntax error near line 4. Unknown lifetime 'missing' (Assumed diagram type: autofac)",
+    });
+  });
+
+  it.each([
+    ["json", "Error in JSON format"],
+    ["autofac", "Duplicate registration 'foo' (Assumed diagram type: autofac)"],
+    ["uml", "No such !option unknown"],
+  ])("recognizes the standard %s error envelope regardless of message wording", (type, detail) => {
+    expect(
+      getPlantUmlDiagnostic(
+        `<svg><text>[From textarea (line 2) ]</text><text>@start${type}</text><text>invalid</text><text>${detail}</text></svg>`,
+        `@start${type}\ninvalid\n@end${type}`,
+      ),
+    ).toEqual({
+      line: 2,
+      message: `Syntax error near line 2. ${detail}`,
+    });
+  });
+
+  it.each([
+    "Syntax Error?",
+    "Unsupported diagram type",
+    "Unknown lifetime 'missing' (Assumed diagram type: autofac)",
+    "[From textarea (line 2)]",
+  ])("accepts diagnostic phrases as ordinary labels: %s", (label) => {
+    expect(
+      getPlantUmlDiagnostic(
+        `<svg xmlns="http://www.w3.org/2000/svg"><text fill="#FF0000">${label}</text></svg>`,
+        `@startuml\nAlice -> Bob : ${label}\n@enduml`,
       ),
     ).toBeNull();
+  });
+
+  it("accepts a diagram with both a location-like label and error-like labels", () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg">
+      <g class="entity"><text>[From textarea (line 2)]</text></g>
+      <g class="entity"><text>Syntax Error? (Assumed diagram type: sequence)</text></g>
+      <g class="entity"><text>Unknown lifetime 'missing' (Assumed diagram type: autofac)</text></g>
+    </svg>`;
+
+    expect(
+      getPlantUmlDiagnostic(
+        svg,
+        '@startuml\nrectangle "[From textarea (line 2)]" as A\nrectangle "Syntax Error? (Assumed diagram type: sequence)" as B\nrectangle "Unknown lifetime \'missing\' (Assumed diagram type: autofac)" as C\n@enduml',
+      ),
+    ).toBeNull();
+  });
+
+  it("does not confuse an error-like source line in the trace with the actual error", () => {
+    expect(
+      getPlantUmlDiagnostic(
+        "<svg><text>[From textarea (line 3)]</text><text>@startautofac</text><text>Syntax Error?</text><text>Unknown lifetime 'missing' (Assumed diagram type: autofac)</text></svg>",
+        "@startautofac\nSyntax Error?\ninvalid\n@endautofac",
+      ),
+    ).toEqual({
+      line: 3,
+      message:
+        "Syntax error near line 3. Unknown lifetime 'missing' (Assumed diagram type: autofac)",
+    });
   });
 
   it.each([0, -1, 4, Number.MAX_SAFE_INTEGER + 1])(
@@ -83,7 +157,7 @@ describe("getPlantUmlDiagnostic", () => {
     (line) => {
       expect(
         getPlantUmlDiagnostic(
-          `<svg><text>[From textarea (line ${line})]</text><text>Syntax Error?</text></svg>`,
+          `<svg><text>[From textarea (line ${line})]</text><text>@startuml</text><text>invalid</text><text>Syntax Error?</text></svg>`,
           "@startuml\ninvalid\n@enduml",
         ),
       ).toEqual({ line: null, message: "Syntax error. Syntax Error?" });
@@ -93,7 +167,7 @@ describe("getPlantUmlDiagnostic", () => {
   it("counts CRLF and blank source lines without shifting the location", () => {
     expect(
       getPlantUmlDiagnostic(
-        "<svg><text>[From textarea (line 3)]</text><text>Syntax Error?</text></svg>",
+        "<svg><text>[From textarea (line 3)]</text><text>@startuml</text><text>invalid</text><text>Syntax Error?</text></svg>",
         "@startuml\r\n\r\ninvalid\r\n@enduml",
       )?.line,
     ).toBe(3);

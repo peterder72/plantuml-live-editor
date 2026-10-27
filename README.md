@@ -94,11 +94,11 @@ bun run test:scenarios:vscode
 ```
 
 GitHub Actions uses Bun 1.3.14 and runs the quality, web, and VS Code suites on
-every pull request, push to `main`, and `v*` version tag. A version-tag build is
-deployed to GitHub Pages only after all three jobs pass. The VS Code Marketplace
-publication and GitHub release are then handled by independent jobs, with the
-release reusing the artifacts built by the tested web and VS Code jobs. Failure
-diagnostics are retained as workflow artifacts.
+every pull request, push to `main`, `v*` version tag, and manual workflow run.
+Only the `main` branch path deploys GitHub Pages, after all three jobs pass.
+Version tags retain the stable VS Code Marketplace publication and GitHub
+release jobs, with the release reusing artifacts built by the tested web and
+VS Code jobs. Failure diagnostics are retained as workflow artifacts.
 
 Unit tests continue to own sanitizer details, transform math, stale-render
 algorithms, and source-rewrite edge cases. Common Gherkin scenarios and the
@@ -123,6 +123,49 @@ The root `package.json` is the release-version source of truth, and
 synchronize the version into the extension manifest and generate
 `vscode/CHANGELOG.md` from the JSON before verification and packaging. Tagged
 GitHub releases use the matching JSON entry as their release notes.
+
+### Opt-in Autofac pre-release publishing
+
+Autofac is released as VS Code version **0.8.0** on the Marketplace's
+**pre-release channel**, not as a stable update. VS Code requires a numeric
+`major.minor.patch` extension version; `--pre-release` marks the channel rather
+than adding a SemVer suffix. Existing stable-channel users are not automatically
+updated to this pre-release. To try it, select **Switch to Pre-Release Version**
+on the extension's Marketplace page in VS Code; switch back to the release
+version to leave that channel.
+
+This prerelease distribution uses **GPL-3.0-or-later**, matching the bundled
+Autofac engine. The extension includes the full GPL and retains the editor's
+original MIT notice and third-party attributions. See
+[`vscode/THIRD_PARTY_NOTICES.md`](vscode/THIRD_PARTY_NOTICES.md) for corresponding
+source links. This does not change the licensing or engine of existing stable
+Marketplace versions.
+
+After pushing `feature/autofac`, a maintainer can explicitly dispatch the
+existing default-branch workflow at that feature ref:
+
+```sh
+gh workflow run deploy-pages.yml \
+  --repo peterder72/plantuml-live-editor \
+  --ref feature/autofac \
+  --field publish_prerelease=true
+```
+
+The boolean `publish_prerelease` input defaults to `false`. Publication requires
+`feature/autofac`, extension/root version `0.8.0`, and the exact bundled engine
+dependency `@peterder72/plantuml-core@1.2026.7-autofac.1`. Quality/unit, web-browser,
+and VS Code integration/scenario jobs must all pass. The VS Code job packages
+its verified build with `vsce package --pre-release`; the publisher downloads
+that run's `autofac-prerelease-vsix` artifact, checks its checksum, identity,
+version, and pre-release metadata, and publishes that exact VSIX with
+`--packagePath` without rebuilding.
+
+Authentication reuses the `vscode-marketplace` environment and Azure OIDC
+configuration used by stable publishing. Any environment branch restrictions
+must permit `feature/autofac`. A feature-branch dispatch does not deploy Pages,
+create a GitHub release, or create/push a tag. Feature pushes do not automatically
+publish anything. Keep `bun run publish:vscode` and `v*` tags for stable releases;
+neither is the opt-in pre-release entry point.
 
 After installing the VSIX, open a PlantUML document. The lightweight
 **PlantUML Controls** view opens below the File Explorer for live toggles,
@@ -163,7 +206,7 @@ for tool inputs, export options, and task configuration.
 ## Known Limitations
 
 - Browser-rendered diagrams are limited to 8192 × 8192 pixels.
-- Sudoku is excluded from PlantUML's MIT browser package.
+- Sudoku is excluded from the bundled browser build.
 - Remote `!include` files and network resources are intentionally unsupported.
 - A restrictive Content Security Policy, startup network lockdown, source
   validation, and inert-SVG allowlist prevent the application and renderer from
