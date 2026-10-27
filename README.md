@@ -206,7 +206,6 @@ for tool inputs, export options, and task configuration.
 ## Known Limitations
 
 - Browser-rendered diagrams are limited to 8192 × 8192 pixels.
-- Sudoku is excluded from the bundled browser build.
 - Remote `!include` files and network resources are intentionally unsupported.
 - A restrictive Content Security Policy, startup network lockdown, source
   validation, and inert-SVG allowlist prevent the application and renderer from

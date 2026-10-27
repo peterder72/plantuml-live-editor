@@ -76,7 +76,6 @@ rejected. The extension does not collect telemetry.
 ## Known Limitations
 
 - Browser-rendered diagrams are limited to 8192 × 8192 pixels.
-- Sudoku is not included in the bundled browser build.
 - Remote `!include` files and network resources are intentionally unsupported.
 - The initial render can take a moment while the embedded engine initializes.
 

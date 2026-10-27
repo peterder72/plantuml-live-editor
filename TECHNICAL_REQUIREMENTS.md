@@ -3,7 +3,7 @@
 ## Runtime And Packaging
 
 - React, TypeScript, Vite, and Bun.
-- Pin `@peterder72/plantuml-core` to `1.2026.6-limit8192.1`.
+- Pin `@peterder72/plantuml-core` to the published engine used by the branch (`1.2026.7-autofac.1` for the Autofac prerelease).
 - Produce a single `dist/index.html` with no runtime file or network dependency.
 - Support current desktop Chrome, Edge, and Firefox.
 - The built file must run from `file://`.
